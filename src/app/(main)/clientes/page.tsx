@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Client, Prize } from '@/lib/types';
+import type { Client, Prize, Cobranca } from '@/lib/types';
 import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
@@ -17,6 +17,9 @@ import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockPrizes } from '@/lib/mock-prizes';
+import { mockCobrancas } from '@/lib/mock-cobrancas';
+import { Badge } from '@/components/ui/badge';
+import { differenceInDays } from 'date-fns';
 
 
 function formatCurrency(value: number) {
@@ -59,7 +62,7 @@ const chargeFormSchema = z.object({
 
 
 // --- ClientCard component ---
-function ClientCard({ client, onChargeClick }: { client: Client; onChargeClick: (client: Client) => void; }) {
+function ClientCard({ client, onChargeClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
   const statusColor =
     client.status === 'active'
       ? 'bg-green-500'
@@ -72,11 +75,20 @@ function ClientCard({ client, onChargeClick }: { client: Client; onChargeClick: 
       <CardContent className="p-4 space-y-4">
         <div className="flex justify-between items-start">
             <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-xl font-bold text-accent">{client.name}</h3>
-                    <span className={`w-2.5 h-2.5 rounded-full ${statusColor}`}></span>
+                    <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-xs font-normal">
+                      {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
+                    </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{client.city}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <p>{client.city}</p>
+                    <span className="text-xs">&bull;</span>
+                    <span className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${statusColor}`}></span>
+                        <span className="capitalize">{client.status}</span>
+                    </span>
+                </div>
             </div>
             <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer">
                 <WhatsAppIcon className="w-6 h-6"/>
@@ -125,6 +137,9 @@ export default function ClientesPage() {
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const { toast } = useToast();
+
+  const [newlyAddedCobrancas, setNewlyAddedCobrancas] = useState<Cobranca[]>([]);
+  const allCobrancas = useMemo(() => [...newlyAddedCobrancas, ...mockCobrancas], [newlyAddedCobrancas]);
 
   // State for prizes in the dialog
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
@@ -206,24 +221,40 @@ export default function ClientesPage() {
   };
 
   const onChargeSubmit = (values: z.infer<typeof chargeFormSchema>) => {
+    if (!selectedClient) return;
     setIsSubmittingCharge(true);
     
-    console.log({
-        clientId: selectedClient?.id,
-        ...values,
+    const newCharge: Cobranca = {
+        id: `cobranca-${Date.now()}`,
+        clientId: selectedClient.id,
+        clientName: selectedClient.name,
+        createdAt: new Date(),
+        scratchedAmount: values.scratchedAmount,
+        scratchPrice: selectedClient.raspinha,
+        commissionPercentage: selectedClient.comissao,
+        grossRevenue: chargeCalculations.grossRevenue,
+        commissionValue: chargeCalculations.commissionValue,
+        netRevenue: chargeCalculations.finalNetRevenue,
+        discount: values.discount,
+        kitStatus: values.kitStatus,
+        cartelaStatus: values.cartelaStatus,
         prizesGiven: prizesForCharge,
-        ...chargeCalculations
-    });
+    };
+    
+    console.log(newCharge);
+
+    // In a real app, you'd save this to a database and update prize stock.
+    // For this mock implementation, we add it to a state to see the visit status update.
+    setNewlyAddedCobrancas(prev => [newCharge, ...prev]);
 
     setTimeout(() => {
-      // In a real app, you'd save this to a database and update prize stock.
       toast({
         title: 'Cobrança Salva!',
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
       });
       setIsSubmittingCharge(false);
       handleChargeDialogClose(false);
-    }, 1000);
+    }, 500);
   };
 
   const filteredClients = useMemo(() => {
@@ -233,6 +264,23 @@ export default function ClientesPage() {
         client.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
+
+  const clientVisitStatus = useMemo(() => {
+    const statusMap = new Map<string, 'visited' | 'not-visited'>();
+    const now = new Date();
+    
+    const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    mockClients.forEach(client => {
+      const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
+      if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
+        statusMap.set(client.id, 'visited');
+      } else {
+        statusMap.set(client.id, 'not-visited');
+      }
+    });
+    return statusMap;
+  }, [allCobrancas]);
 
   const clientsByCity = useMemo(() => {
     return filteredClients.reduce((acc, client) => {
@@ -278,7 +326,12 @@ export default function ClientesPage() {
                     <h2 className="text-xl font-semibold border-b border-border pb-2">{city}</h2>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {clients.map(client => (
-                            <ClientCard key={client.id} client={client} onChargeClick={handleOpenChargeDialog} />
+                            <ClientCard 
+                                key={client.id} 
+                                client={client} 
+                                onChargeClick={handleOpenChargeDialog}
+                                visitStatus={clientVisitStatus.get(client.id) || 'not-visited'}
+                             />
                         ))}
                     </div>
                 </div>

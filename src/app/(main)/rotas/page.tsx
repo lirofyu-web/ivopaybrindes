@@ -10,6 +10,9 @@ import type { Client } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { mockCobrancas } from '@/lib/mock-cobrancas';
+import { Badge } from '@/components/ui/badge';
+import { differenceInDays } from 'date-fns';
 
 export default function RotasPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -26,6 +29,23 @@ export default function RotasPage() {
 
     const clientsWithLocation = useMemo(() => mockClients.filter(c => c.location), []);
     
+    const clientVisitStatus = useMemo(() => {
+        const statusMap = new Map<string, 'visited' | 'not-visited'>();
+        const now = new Date();
+
+        const sortedCobrancas = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+        clientsWithLocation.forEach(client => {
+        const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
+        if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
+            statusMap.set(client.id, 'visited');
+        } else {
+            statusMap.set(client.id, 'not-visited');
+        }
+        });
+        return statusMap;
+    }, [clientsWithLocation]);
+
     const isFullScreen = fullScreenMode !== 'none';
 
     return (
@@ -114,22 +134,30 @@ export default function RotasPage() {
                         <CardContent className="p-0 flex-1 overflow-hidden">
                             <ScrollArea className="h-full px-2">
                                 <div className="space-y-2 py-2">
-                                    {clientsWithLocation.map(client => (
-                                        <Button
-                                            key={client.id}
-                                            variant={selectedClient?.id === client.id ? "secondary" : "ghost"}
-                                            className="w-full justify-start h-auto py-2"
-                                            onClick={() => setSelectedClient(client)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <User className="h-5 w-5 text-muted-foreground" />
-                                                <div className="text-left">
-                                                    <p className="font-semibold">{client.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{client.city}</p>
+                                    {clientsWithLocation.map(client => {
+                                        const visitStatus = clientVisitStatus.get(client.id) || 'not-visited';
+                                        return (
+                                            <Button
+                                                key={client.id}
+                                                variant={selectedClient?.id === client.id ? "secondary" : "ghost"}
+                                                className="w-full justify-start h-auto py-2"
+                                                onClick={() => setSelectedClient(client)}
+                                            >
+                                                <div className="flex items-center gap-3 w-full">
+                                                    <User className="h-5 w-5 text-muted-foreground" />
+                                                    <div className="text-left flex-1">
+                                                        <p className="font-semibold">{client.name}</p>
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-xs text-muted-foreground">{client.city}</p>
+                                                            <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-xs font-normal">
+                                                                {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </Button>
-                                    ))}
+                                            </Button>
+                                        )
+                                    })}
                                 </div>
                             </ScrollArea>
                         </CardContent>
