@@ -4,7 +4,7 @@ import { PageTitle } from './page-title';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
 import { LogOut } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 
@@ -44,10 +44,15 @@ export default function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user.displayName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4"/>
-                Sair
-              </DropdownMenuItem>
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel className="px-2 pb-2 text-xs font-normal text-muted-foreground">
+                        Clique abaixo para encerrar a sessão com segurança.
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4"/>
+                        Sair
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
       )}
