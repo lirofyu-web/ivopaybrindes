@@ -30,8 +30,8 @@ export function Receipt({ cobranca }: { cobranca: Cobranca }) {
                 <div className="flex justify-center">
                     <AppLogo className="text-black" logoBoxCn="bg-black text-white" logoTextCn="text-black" />
                 </div>
-                <p>CNPJ: 12.345.678/0001-99</p>
-                <p>Rua Fictícia, 123 - Centro</p>
+                <p className="font-bold">SUA SORTE VALE MUITO!!</p>
+                <p>JAGUAPITA-PR</p>
                 <p>----------------------------------------</p>
             </div>
             
