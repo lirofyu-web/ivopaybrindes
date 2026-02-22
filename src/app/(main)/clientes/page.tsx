@@ -67,13 +67,6 @@ const chargeFormSchema = z.object({
 
 // --- ClientCard component ---
 function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
-  const statusColor =
-    client.status === 'active'
-      ? 'bg-green-500'
-      : client.status === 'inactive'
-      ? 'bg-red-500'
-      : 'bg-yellow-500';
-      
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
@@ -89,11 +82,6 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <p>{client.route}</p>
-                    <span className="text-xs">&bull;</span>
-                    <span className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${statusColor}`}></span>
-                        <span className="capitalize">{client.status}</span>
-                    </span>
                 </div>
             </div>
             <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer">
