@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Printer, Filter, Calendar as CalendarIcon, Package, Layers, Gift, Archive } from "lucide-react";
@@ -13,15 +13,32 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { mockPrizes } from '@/lib/mock-prizes';
+import type { Route } from '@/lib/types';
+import { mockRoutes } from '@/lib/mock-routes';
 
 export default function RelatoriosPage() {
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
+    const [routes, setRoutes] = useState<Route[]>([]);
 
-    const routes = useMemo(() => {
-        const allRoutes = mockCobrancas.map(c => c.route);
-        return ['all', ...Array.from(new Set(allRoutes)).sort()];
+    useEffect(() => {
+        try {
+            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
+            if (storedRoutesRaw) {
+                setRoutes(JSON.parse(storedRoutesRaw));
+            } else {
+                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
+                setRoutes(mockRoutes);
+            }
+        } catch (error) {
+            console.error("Failed to read routes from localStorage", error);
+            setRoutes(mockRoutes);
+        }
     }, []);
+
+    const routeOptions = useMemo(() => {
+        return ['all', ...routes.map(r => r.name).sort()];
+    }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
         const sorted = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -130,7 +147,7 @@ export default function RelatoriosPage() {
                             <SelectValue placeholder="Filtrar por Rota" />
                         </SelectTrigger>
                         <SelectContent>
-                            {routes.map(route => (
+                            {routeOptions.map(route => (
                                 <SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>
                             ))}
                         </SelectContent>

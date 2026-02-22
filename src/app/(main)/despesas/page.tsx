@@ -18,9 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingDown, PlusCircle, Loader2, Filter, Printer, Calendar as CalendarIcon, Trash2 } from "lucide-react";
-import type { Despesa } from '@/lib/types';
+import type { Despesa, Route } from '@/lib/types';
 import { mockDespesas } from '@/lib/mock-despesas';
-import { mockClients } from '@/lib/mock-clients';
+import { mockRoutes } from '@/lib/mock-routes';
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -49,6 +49,7 @@ export default function DespesasPage() {
     // Filters
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
+    const [routes, setRoutes] = useState<Route[]>([]);
 
     // Delete dialog
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -68,19 +69,26 @@ export default function DespesasPage() {
                 localStorage.setItem('mrd-brindes-despesas', JSON.stringify(mockDespesas));
                 setDespesas(mockDespesas);
             }
+
+            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
+            if (storedRoutesRaw) {
+                setRoutes(JSON.parse(storedRoutesRaw));
+            } else {
+                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
+                setRoutes(mockRoutes);
+            }
         } catch (error) {
-            console.error("Failed to read expenses from localStorage", error);
+            console.error("Failed to read data from localStorage", error);
             setDespesas(mockDespesas);
+            setRoutes(mockRoutes);
         }
         setIsLoading(false);
     }, []);
 
-    const routes = useMemo(() => {
-        const allClientRoutes = mockClients.map(c => c.route);
-        // Also include routes that might only exist on expenses but not on clients
-        const allExpenseRoutes = despesas.map(d => d.route);
-        return ['all', ...Array.from(new Set([...allClientRoutes, ...allExpenseRoutes])).sort()];
-    }, [despesas]);
+    const routeOptions = useMemo(() => {
+        return ['all', ...routes.map(r => r.name).sort()];
+    }, [routes]);
+
 
     const form = useForm<z.infer<typeof despesaFormSchema>>({
         resolver: zodResolver(despesaFormSchema),
@@ -258,7 +266,7 @@ export default function DespesasPage() {
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
                                             <SelectContent>
-                                                {routes.filter(r=>r!=='all').map(route => (<SelectItem key={route} value={route}>{route}</SelectItem>))}
+                                                {routes.map(route => (<SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>))}
                                             </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -289,7 +297,7 @@ export default function DespesasPage() {
                                 <Select value={selectedRoute} onValueChange={setSelectedRoute}>
                                     <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filtrar por Rota" /></SelectTrigger>
                                     <SelectContent>
-                                        {routes.map(route => (<SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>))}
+                                        {routeOptions.map(route => (<SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>))}
                                     </SelectContent>
                                 </Select>
                             </div>

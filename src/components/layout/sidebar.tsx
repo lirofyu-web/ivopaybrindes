@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart,
-  CircleDot,
   DollarSign,
   Gift,
+  MapPin,
   TrendingDown,
   Settings,
   Users,
@@ -25,7 +25,7 @@ import {
 
 const navItems = [
   { href: '/clientes', label: 'Clientes', icon: Users },
-  { href: '/rotas', label: 'Rotas', icon: CircleDot, className: 'text-sky-400' },
+  { href: '/rotas', label: 'Rotas', icon: MapPin, className: 'text-sky-400' },
   { href: '/premios', label: 'Prêmios', icon: Gift, className: 'text-rose-400' },
   { href: '/cobranca', label: 'Cobrança', icon: DollarSign, className: 'text-emerald-400' },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart, className: 'text-orange-400' },

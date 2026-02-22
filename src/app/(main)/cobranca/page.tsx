@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { DollarSign, Filter, Printer, Calendar as CalendarIcon } from "lucide-react";
 import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import type { Route } from "@/lib/types";
+import { mockRoutes } from "@/lib/mock-routes";
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -24,11 +26,26 @@ function formatDate(date: Date) {
 export default function CobrancaPage() {
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
+    const [routes, setRoutes] = useState<Route[]>([]);
 
-    const routes = useMemo(() => {
-        const allRoutes = mockCobrancas.map(c => c.route);
-        return ['all', ...Array.from(new Set(allRoutes)).sort()];
+     useEffect(() => {
+        try {
+            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
+            if (storedRoutesRaw) {
+                setRoutes(JSON.parse(storedRoutesRaw));
+            } else {
+                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
+                setRoutes(mockRoutes);
+            }
+        } catch (error) {
+            console.error("Failed to read routes from localStorage", error);
+            setRoutes(mockRoutes);
+        }
     }, []);
+
+    const routeOptions = useMemo(() => {
+        return ['all', ...routes.map(r => r.name).sort()];
+    }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
         const sorted = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -140,7 +157,7 @@ export default function CobrancaPage() {
                                     <SelectValue placeholder="Filtrar por Rota" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {routes.map(route => (
+                                    {routeOptions.map(route => (
                                         <SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>
                                     ))}
                                 </SelectContent>

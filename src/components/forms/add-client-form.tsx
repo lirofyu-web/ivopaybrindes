@@ -17,18 +17,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Globe, Loader2, X } from 'lucide-react';
-import type { Prize, Client } from '@/lib/types';
+import type { Prize, Client, Route } from '@/lib/types';
 import { mockPrizes } from '@/lib/mock-prizes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
+import { mockRoutes } from '@/lib/mock-routes';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
   phone: z.string().min(10, 'Telefone inválido (inclua DDD).').max(15, 'Telefone inválido.'),
   address: z.string().min(2, 'Endereço deve ter pelo menos 2 caracteres.'),
   city: z.string().min(5, 'Cidade / Estado deve ter pelo menos 5 caracteres.'),
-  route: z.string().min(2, 'A rota deve ter pelo menos 2 caracteres.'),
+  route: z.string().min(1, 'Você deve selecionar uma rota.'),
   raspinha: z.coerce.number().min(0, 'O valor deve ser positivo.'),
   comissao: z.coerce.number().min(0, 'A comissão deve ser positiva.').max(100, 'A comissão não pode passar de 100%.'),
   location: z
@@ -50,6 +51,7 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
   const [initialPrizes, setInitialPrizes] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
+  const [routes, setRoutes] = useState<Route[]>([]);
   
   const isEditing = !!client;
 
@@ -79,6 +81,18 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
     if (isEditing && client.prizes) {
         setInitialPrizes(client.prizes);
         form.setValue('prizes', client.prizes);
+    }
+     try {
+      const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
+      if (storedRoutesRaw) {
+          setRoutes(JSON.parse(storedRoutesRaw));
+      } else {
+          localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
+          setRoutes(mockRoutes);
+      }
+    } catch(e) {
+      console.error("Failed to load routes", e);
+      setRoutes(mockRoutes);
     }
   }, [client, isEditing, form]);
 
@@ -314,11 +328,20 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           render={({ field }) => (
             <FormItem>
               <FormLabel>Rota</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: Rota 1" {...field} />
-              </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma rota" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {routes.map(route => (
+                            <SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
               <FormDescription>
-                Use um nome para a rota (ex: Rota 1, Rota 2) para agrupar clientes.
+                Selecione a rota que este cliente pertence.
               </FormDescription>
               <FormMessage />
             </FormItem>

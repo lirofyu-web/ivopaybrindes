@@ -56,3 +56,9 @@ export type Despesa = {
   createdAt: Date;
   route: string;
 };
+
+export type Route = {
+  id: string;
+  name: string;
+  description: string;
+};
