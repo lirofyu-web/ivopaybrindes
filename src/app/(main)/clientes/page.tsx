@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Client, Prize, Cobranca } from '@/lib/types';
+import type { Client, Prize, Cobranca, Route } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockPrizes } from '@/lib/mock-prizes';
 import { mockCobrancas } from '@/lib/mock-cobrancas';
+import { mockRoutes } from '@/lib/mock-routes';
 import { Badge } from '@/components/ui/badge';
 import { differenceInDays } from 'date-fns';
 import { buttonVariants } from '@/components/ui/button';
@@ -137,6 +138,7 @@ export default function ClientesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
+  const [routes, setRoutes] = useState<Route[]>([]);
 
   const [newlyAddedCobrancas, setNewlyAddedCobrancas] = useState<Cobranca[]>([]);
   const allCobrancas = useMemo(() => [...newlyAddedCobrancas, ...mockCobrancas], [newlyAddedCobrancas]);
@@ -159,9 +161,19 @@ export default function ClientesPage() {
         localStorage.setItem('mrd-brindes-clients', JSON.stringify(mockClients));
         setClients(mockClients);
       }
+
+      const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
+      if (storedRoutesRaw) {
+          setRoutes(JSON.parse(storedRoutesRaw));
+      } else {
+          localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
+          setRoutes(mockRoutes);
+      }
+
     } catch (error) {
-      console.error("Failed to read clients from localStorage", error);
+      console.error("Failed to read data from localStorage", error);
       setClients(mockClients);
+      setRoutes(mockRoutes);
     }
     setIsLoading(false);
   }, []);
@@ -379,15 +391,22 @@ export default function ClientesPage() {
   }, [allCobrancas, clients]);
 
   const clientsByRoute = useMemo(() => {
+    const routeDescriptionMap = new Map<string, string>();
+    routes.forEach(r => routeDescriptionMap.set(r.name, r.description));
+
     return filteredClients.reduce((acc, client) => {
-      const route = client.route;
-      if (!acc[route]) {
-        acc[route] = [];
+      const routeName = client.route;
+      if (!acc[routeName]) {
+        acc[routeName] = {
+          description: routeDescriptionMap.get(routeName) || '',
+          clients: []
+        };
       }
-      acc[route].push(client);
+      acc[routeName].clients.push(client);
       return acc;
-    }, {} as Record<string, Client[]>);
-  }, [filteredClients]);
+    }, {} as Record<string, { description: string; clients: Client[] }>);
+  }, [filteredClients, routes]);
+
 
   if (isLoading) {
     return (
@@ -442,9 +461,12 @@ export default function ClientesPage() {
         </div>
 
         <div className="space-y-8">
-            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([route, clients]) => (
-                <div key={route} className="space-y-4">
-                    <h2 className="text-xl font-semibold border-b border-border pb-2">{route}</h2>
+            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients }]) => (
+                <div key={routeName} className="space-y-4">
+                    <h2 className="text-xl font-semibold border-b border-border pb-2">
+                        {routeName}
+                        {description && <span className="text-sm font-normal text-muted-foreground ml-2">- {description}</span>}
+                    </h2>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {clients.map(client => (
                             <ClientCard 
