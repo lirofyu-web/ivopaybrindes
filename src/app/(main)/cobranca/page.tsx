@@ -71,7 +71,48 @@ export default function CobrancaPage() {
 
 
     const handlePrint = () => {
-        window.print();
+        const reportContentNode = document.getElementById('report-content');
+        if (!reportContentNode) return;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Por favor, habilite pop-ups para imprimir o relatório.');
+            return;
+        }
+
+        // Get all style/link tags from the main document head
+        const pageStyles = document.head.innerHTML;
+
+        // Clone the content to manipulate it for the popup
+        const contentClone = reportContentNode.cloneNode(true) as HTMLElement;
+        const printHeader = contentClone.querySelector('.print-only-header');
+        
+        // The print header is hidden by default on screen, let's show it in the popup
+        if (printHeader) {
+            printHeader.classList.remove('hidden');
+        }
+
+        // Construct the full HTML for the new window
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Relatório de Cobranças</title>
+                    ${pageStyles}
+                </head>
+                <body class="dark bg-background p-6">
+                    ${contentClone.innerHTML}
+                </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+
+        // Use a timeout to ensure all assets are loaded before triggering print
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 500);
     };
 
   return (
@@ -149,8 +190,8 @@ export default function CobrancaPage() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
-                 <div className="hidden print:block mb-6">
+            <CardContent id="report-content">
+                 <div className="hidden print:block mb-6 print-only-header">
                     <h2 className="text-2xl font-bold">Relatório de Cobranças</h2>
                     <div className="text-sm text-muted-foreground">
                         <p><strong>Rota:</strong> {selectedRoute === 'all' ? 'Todas as Rotas' : selectedRoute}</p>
