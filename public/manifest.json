@@ -1,21 +1,21 @@
 {
-    "name": "MRD Brindes",
-    "short_name": "MRD Brindes",
-    "description": "Gerenciamento e cobranças de raspinhas da sorte",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#111827",
-    "theme_color": "#3B82F6",
-    "icons": [
-        {
-            "src": "icon-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "icon-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ]
+  "name": "MRD Brindes",
+  "short_name": "MRD Brindes",
+  "description": "Gerenciamento e cobranças de raspinhas da sorte",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121827",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
