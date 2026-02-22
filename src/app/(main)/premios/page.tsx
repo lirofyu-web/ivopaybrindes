@@ -257,52 +257,50 @@ export default function PremiosPage() {
                                             </FormItem>
                                         )}
                                     />
-                                    <FormField
-                                        control={form.control}
-                                        name="imageUrl"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Imagem do Prêmio</FormLabel>
-                                                {isCameraOpen ? (
-                                                    <div className="space-y-4 p-4 border rounded-md">
-                                                        <h5 className="font-semibold text-center">Câmera</h5>
-                                                        {hasCameraPermission === false && (
-                                                            <Alert variant="destructive">
-                                                                <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
-                                                                <AlertDescription>
-                                                                    Por favor, permita o acesso à câmera para tirar a foto.
-                                                                </AlertDescription>
-                                                            </Alert>
-                                                        )}
-                                                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
-                                                        <div className="flex gap-2 justify-center">
-                                                            <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
-                                                                <Camera className="mr-2 h-4 w-4" />
-                                                                Tirar Foto
-                                                            </Button>
-                                                            <Button type="button" variant="outline" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
-                                                        </div>
+                                    <FormItem>
+                                        <FormLabel>Imagem do Prêmio</FormLabel>
+                                        {isCameraOpen ? (
+                                            <div className="space-y-4 p-4 border rounded-md">
+                                                <h5 className="font-semibold text-center">Câmera</h5>
+                                                {hasCameraPermission === false && (
+                                                    <Alert variant="destructive">
+                                                        <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
+                                                        <AlertDescription>
+                                                            Por favor, permita o acesso à câmera para tirar a foto.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                )}
+                                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                                                <div className="flex gap-2 justify-center">
+                                                    <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
+                                                        <Camera className="mr-2 h-4 w-4" />
+                                                        Tirar Foto
+                                                    </Button>
+                                                    <Button type="button" variant="outline" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {prizeImage ? (
+                                                    <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                                        <Image src={prizeImage} alt="Imagem do prêmio" fill className="object-cover" />
+                                                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setPrizeImage(null); form.setValue('imageUrl', '', { shouldValidate: true }); }}>
+                                                            <X className="h-4 w-4"/>
+                                                        </Button>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-2">
-                                                        {prizeImage ? (
-                                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                                                <Image src={prizeImage} alt="Imagem do prêmio" fill className="object-cover" />
-                                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setPrizeImage(null); form.setValue('imageUrl', ''); }}>
-                                                                    <X className="h-4 w-4"/>
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <Button type="button" variant="outline" className="w-full h-24" onClick={openCamera}>
-                                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Imagem
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                                    <Button type="button" variant="outline" className="w-full h-24" onClick={openCamera}>
+                                                        <Camera className="mr-2 h-5 w-5" /> Adicionar Imagem
+                                                    </Button>
                                                 )}
-                                                <FormMessage />
-                                            </FormItem>
+                                            </div>
                                         )}
-                                    />
+                                        {form.formState.errors.imageUrl && (
+                                            <p className="text-sm font-medium text-destructive">
+                                                {form.formState.errors.imageUrl.message}
+                                            </p>
+                                        )}
+                                    </FormItem>
                                 </div>
                                 <Button type="submit" disabled={isSubmitting} className="w-full">
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
