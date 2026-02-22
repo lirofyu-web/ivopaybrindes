@@ -3,6 +3,7 @@ export type Client = {
   name: string;
   phone: string;
   address: string;
+  city: string;
   route: string;
   location?: {
     lat: number;
