@@ -22,6 +22,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { AppLogo } from './logo';
 
 const navItems = [
   { href: '/clientes', label: 'Clientes', icon: Users },
@@ -44,11 +45,8 @@ export default function AppSidebar() {
     >
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between">
-          <Link href="/clientes" className="flex items-center gap-2">
-            <div className="flex items-baseline gap-1.5 text-xl font-bold font-headline text-foreground group-data-[collapsible=icon]:hidden">
-                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-sm">MRD</span>
-                <span className="text-lg font-medium tracking-wider">BRINDES</span>
-            </div>
+          <Link href="/clientes">
+            <AppLogo className="text-foreground group-data-[collapsible=icon]:hidden" />
           </Link>
           <div className="group-data-[collapsible=icon]:hidden">
             {!isMobile && <SidebarTrigger />}

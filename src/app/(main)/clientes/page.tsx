@@ -22,6 +22,8 @@ import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { Badge } from '@/components/ui/badge';
 import { differenceInDays } from 'date-fns';
 import { buttonVariants } from '@/components/ui/button';
+import ReactDOMServer from 'react-dom/server';
+import { Receipt } from '@/components/receipt';
 
 
 function formatCurrency(value: number) {
@@ -271,6 +273,61 @@ export default function ClientesPage() {
       form.setValue('prizesGiven', updatedPrizes);
   };
 
+  const handlePrintReceipt = (cobranca: Cobranca) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao imprimir',
+            description: 'Por favor, habilite pop-ups para gerar o recibo.',
+        });
+        return;
+    }
+    
+    const receiptHtml = ReactDOMServer.renderToString(
+      <Receipt cobranca={cobranca} />
+    );
+
+    const pageStyles = document.head.innerHTML;
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Recibo - ${cobranca.clientName}</title>
+                ${pageStyles}
+                <style>
+                    @media print {
+                        @page { 
+                            size: 80mm auto;
+                            margin: 0;
+                        }
+                        body {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                    }
+                    body {
+                        width: 80mm;
+                        margin: 0;
+                        padding: 0;
+                        background: white;
+                    }
+                </style>
+            </head>
+            <body class="light">
+                ${receiptHtml}
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+    }, 500);
+  };
+
   const onChargeSubmit = (values: z.infer<typeof chargeFormSchema>) => {
     if (!selectedClient) return;
     setIsSubmittingCharge(true);
@@ -297,14 +354,15 @@ export default function ClientesPage() {
 
     setNewlyAddedCobrancas(prev => [newCharge, ...prev]);
 
-    setTimeout(() => {
-      toast({
-        title: 'Cobrança Salva!',
-        description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
-      });
-      setIsSubmittingCharge(false);
-      handleChargeDialogClose(false);
-    }, 500);
+    toast({
+      title: 'Cobrança Salva!',
+      description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
+    });
+    
+    handlePrintReceipt(newCharge);
+
+    setIsSubmittingCharge(false);
+    handleChargeDialogClose(false);
   };
 
   const filteredClients = useMemo(() => {
