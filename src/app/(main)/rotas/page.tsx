@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { mockClients } from '@/lib/mock-clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, List, User, PanelLeftClose, PanelLeftOpen, Maximize, Minimize } from 'lucide-react';
+import { Map as MapIcon, List, User, PanelLeftClose, PanelLeftOpen, Maximize, Minimize } from 'lucide-react';
 import type { Client } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ export default function RotasPage() {
                 "flex items-center gap-3",
                 isFullScreen && "hidden"
             )}>
-                <Map className="h-8 w-8 text-muted-foreground" />
+                <MapIcon className="h-8 w-8 text-muted-foreground" />
                 <h1 className="text-3xl font-bold font-headline">
                     Rotas de Clientes
                 </h1>
