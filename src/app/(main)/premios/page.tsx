@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,12 @@ import { Gift, PlusCircle, Loader2, Image as ImageIcon, Trash2, Edit } from 'luc
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { Badge } from '@/components/ui/badge';
 
 // --- Add Prize Form Schema ---
 const prizeFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome do prêmio deve ter pelo menos 3 caracteres.' }),
+  quantity: z.coerce.number().min(0, { message: 'A quantidade não pode ser negativa.' }),
 });
 
 // --- Prize Card Component ---
@@ -33,6 +35,9 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
                     className="object-cover"
                     data-ai-hint="prize item"
                 />
+                 <Badge variant={prize.quantity > 0 ? 'default' : 'destructive'} className="absolute top-2 right-2">
+                    {prize.quantity > 0 ? `Estoque: ${prize.quantity}` : 'Esgotado'}
+                </Badge>
             </div>
             <CardHeader className="p-4 flex-1">
                 <CardTitle className="text-lg">{prize.name}</CardTitle>
@@ -63,13 +68,13 @@ export default function PremiosPage() {
 
     const form = useForm<z.infer<typeof prizeFormSchema>>({
         resolver: zodResolver(prizeFormSchema),
-        defaultValues: { name: '' },
+        defaultValues: { name: '', quantity: 0 },
     });
 
     const handleDialogOpen = (open: boolean) => {
         if (!open) {
             // Reset form on close
-            form.reset();
+            form.reset({ name: '', quantity: 0 });
             setEditingPrize(null);
             setImagePreview(null);
             setImageFile(null);
@@ -80,6 +85,7 @@ export default function PremiosPage() {
     const handleEdit = (prize: Prize) => {
         setEditingPrize(prize);
         form.setValue('name', prize.name);
+        form.setValue('quantity', prize.quantity);
         setImagePreview(prize.imageUrl);
         setIsDialogOpen(true);
     };
@@ -120,7 +126,7 @@ export default function PremiosPage() {
         setTimeout(() => {
             if (editingPrize) {
                 // Update existing prize
-                const updatedPrizes = prizes.map(p => p.id === editingPrize.id ? { ...p, name: values.name, imageUrl: imagePreview } : p);
+                const updatedPrizes = prizes.map(p => p.id === editingPrize.id ? { ...p, name: values.name, quantity: values.quantity, imageUrl: imagePreview } : p);
                 setPrizes(updatedPrizes);
                 toast({
                     title: 'Prêmio Atualizado!',
@@ -132,6 +138,7 @@ export default function PremiosPage() {
                     id: (prizes.length + 1).toString(),
                     name: values.name,
                     imageUrl: imagePreview,
+                    quantity: values.quantity,
                 };
                 setPrizes([newPrize, ...prizes]);
                 toast({
@@ -179,6 +186,19 @@ export default function PremiosPage() {
                                                 <FormLabel>Nome do Prêmio</FormLabel>
                                                 <FormControl>
                                                     <Input placeholder="Ex: Bicicleta Aro 29" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="quantity"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Quantidade em Estoque</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" placeholder="Ex: 10" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
