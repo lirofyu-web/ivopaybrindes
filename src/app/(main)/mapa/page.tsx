@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { Client, Cobranca } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,13 @@ export default function MapaPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'default' | 'list-full' | 'map-full'>('default');
+    const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
     const isLoading = isLoadingClients || isLoadingCobrancas;
+
+    useEffect(() => {
+        setCurrentDate(new Date());
+    }, []);
 
     const clientsWithLocation = useMemo(() => {
         if (!clients) return [];
@@ -41,9 +46,12 @@ export default function MapaPage() {
 
     const clientVisitStatus = useMemo(() => {
         const statusMap = new Map<string, 'visited' | 'not-visited'>();
-        if (!clients || !allCobrancas) return statusMap;
+        if (!clients || !allCobrancas || !currentDate) {
+            clients?.forEach(client => statusMap.set(client.id!, 'not-visited'));
+            return statusMap;
+        }
         
-        const now = new Date();
+        const now = currentDate;
         const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         clients.forEach(client => {
@@ -55,7 +63,7 @@ export default function MapaPage() {
           }
         });
         return statusMap;
-    }, [allCobrancas, clients]);
+    }, [allCobrancas, clients, currentDate]);
 
 
     if (isLoading) {

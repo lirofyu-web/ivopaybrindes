@@ -143,6 +143,7 @@ export default function ClientesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
   
   // State for prizes in the dialog
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
@@ -167,6 +168,10 @@ export default function ClientesPage() {
   
   const scratchedAmount = form.watch('scratchedAmount');
   const discount = form.watch('discount') || 0;
+
+    useEffect(() => {
+        setCurrentDate(new Date());
+    }, []);
 
     useEffect(() => {
         if (isCameraOpen) {
@@ -399,8 +404,8 @@ export default function ClientesPage() {
         kitStatus: values.kitStatus,
         cartelaStatus: values.cartelaStatus,
         prizesGiven: prizesForCharge,
-        frontCardImageUrl: frontImage || undefined,
-        backCardImageUrl: backImage || undefined,
+        frontCardImageUrl: values.frontCardImageUrl,
+        backCardImageUrl: values.backCardImageUrl,
     };
     
     try {
@@ -450,8 +455,11 @@ export default function ClientesPage() {
 
   const clientVisitStatus = useMemo(() => {
     const statusMap = new Map<string, 'visited' | 'not-visited'>();
-    if (!allCobrancas || !clients) return statusMap;
-    const now = new Date();
+    if (!allCobrancas || !clients || !currentDate) {
+        clients?.forEach(client => statusMap.set(client.id!, 'not-visited'));
+        return statusMap;
+    };
+    const now = currentDate;
     
     const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -464,7 +472,7 @@ export default function ClientesPage() {
       }
     });
     return statusMap;
-  }, [allCobrancas, clients]);
+  }, [allCobrancas, clients, currentDate]);
 
   const clientsByRoute = useMemo(() => {
     if (!filteredClients || !routes) return {};
@@ -736,7 +744,7 @@ export default function ClientesPage() {
                                         {frontImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={frontImage} alt="Frente da cartela" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => setFrontImage(null)}>
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setFrontImage(null); form.setValue('frontCardImageUrl', undefined); }}>
                                                     <X className="h-4 w-4"/>
                                                 </Button>
                                             </div>
@@ -751,7 +759,7 @@ export default function ClientesPage() {
                                         {backImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={backImage} alt="Verso da cartela" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => setBackImage(null)}>
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setBackImage(null); form.setValue('backCardImageUrl', undefined); }}>
                                                     <X className="h-4 w-4"/>
                                                 </Button>
                                             </div>
