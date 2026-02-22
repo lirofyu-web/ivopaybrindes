@@ -1,9 +1,10 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import type { Client } from '@/lib/types';
+import { useEffect } from 'react';
 
 // This is to fix the default icon issue with react-leaflet and webpack
 const markerIcon = new L.Icon({
@@ -17,9 +18,21 @@ const markerIcon = new L.Icon({
 
 interface ClientMapProps {
     clients: Client[];
+    selectedClient: Client | null;
 }
 
-const ClientMap = ({ clients }: ClientMapProps) => {
+function MapUpdater({ selectedClient }: { selectedClient: Client | null }) {
+    const map = useMap();
+    useEffect(() => {
+        if (selectedClient?.location) {
+            map.flyTo([selectedClient.location.lat, selectedClient.location.lng], 15);
+        }
+    }, [selectedClient, map]);
+
+    return null;
+}
+
+const ClientMap = ({ clients, selectedClient }: ClientMapProps) => {
     const center: [number, number] = [-14.2350, -51.9253]; // Center of Brazil
 
     const clientsWithLocation = clients.filter(client => client.location);
@@ -39,6 +52,7 @@ const ClientMap = ({ clients }: ClientMapProps) => {
                     </Popup>
                 </Marker>
             ))}
+            <MapUpdater selectedClient={selectedClient} />
         </MapContainer>
     );
 };
