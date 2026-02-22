@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,19 +10,20 @@ import { useToast } from '@/hooks/use-toast';
 import type { Prize } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Gift, PlusCircle, Loader2, Image as ImageIcon, Trash2, Edit } from 'lucide-react';
+import { Gift, PlusCircle, Loader2, Edit, Trash2, Camera, X } from 'lucide-react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- Add Prize Form Schema ---
 const prizeFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome do prêmio deve ter pelo menos 3 caracteres.' }),
   quantity: z.coerce.number().min(0, { message: 'A quantidade não pode ser negativa.' }),
-  imageUrl: z.string().url({ message: 'Por favor, insira uma URL de imagem válida.' }),
+  imageUrl: z.string().min(1, { message: 'A imagem do prêmio é obrigatória.' }),
 });
 
 // --- Prize Card Component ---
@@ -67,15 +68,78 @@ export default function PremiosPage() {
     const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
     const { toast } = useToast();
 
+    // Camera state
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [prizeImage, setPrizeImage] = useState<string | null>(null);
+
+
     const form = useForm<z.infer<typeof prizeFormSchema>>({
         resolver: zodResolver(prizeFormSchema),
         defaultValues: { name: '', quantity: 0, imageUrl: '' },
     });
 
+    useEffect(() => {
+        if (isCameraOpen) {
+            const getCameraPermission = async () => {
+                try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                setHasCameraPermission(true);
+                } catch (error) {
+                console.error('Error accessing camera:', error);
+                setHasCameraPermission(false);
+                toast({
+                    variant: 'destructive',
+                    title: 'Acesso à Câmera Negado',
+                    description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
+                });
+                }
+            };
+            getCameraPermission();
+        } else {
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+            }
+        }
+    }, [isCameraOpen, toast]);
+
+    const handleTakePhoto = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        if (context) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUri = canvas.toDataURL('image/jpeg');
+            
+            setPrizeImage(dataUri);
+            form.setValue('imageUrl', dataUri, { shouldValidate: true });
+            
+            setIsCameraOpen(false);
+        }
+    };
+
+    const openCamera = () => {
+        setIsCameraOpen(true);
+    }
+
     const handleDialogOpen = (open: boolean) => {
         if (!open) {
             form.reset({ name: '', quantity: 0, imageUrl: '' });
             setEditingPrize(null);
+            setPrizeImage(null);
+            setIsCameraOpen(false);
+            setHasCameraPermission(null);
         }
         setIsDialogOpen(open);
     }
@@ -85,6 +149,7 @@ export default function PremiosPage() {
         form.setValue('name', prize.name);
         form.setValue('quantity', prize.quantity);
         form.setValue('imageUrl', prize.imageUrl);
+        setPrizeImage(prize.imageUrl);
         setIsDialogOpen(true);
     };
 
@@ -141,6 +206,7 @@ export default function PremiosPage() {
 
     return (
         <div className="space-y-6">
+            <canvas ref={canvasRef} className="hidden"></canvas>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <Gift className="h-8 w-8 text-muted-foreground" />
@@ -196,10 +262,43 @@ export default function PremiosPage() {
                                         name="imageUrl"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>URL da Imagem do Prêmio</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="https://exemplo.com/imagem.png" {...field} />
-                                                </FormControl>
+                                                <FormLabel>Imagem do Prêmio</FormLabel>
+                                                {isCameraOpen ? (
+                                                    <div className="space-y-4 p-4 border rounded-md">
+                                                        <h5 className="font-semibold text-center">Câmera</h5>
+                                                        {hasCameraPermission === false && (
+                                                            <Alert variant="destructive">
+                                                                <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
+                                                                <AlertDescription>
+                                                                    Por favor, permita o acesso à câmera para tirar a foto.
+                                                                </AlertDescription>
+                                                            </Alert>
+                                                        )}
+                                                        <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                                                        <div className="flex gap-2 justify-center">
+                                                            <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
+                                                                <Camera className="mr-2 h-4 w-4" />
+                                                                Tirar Foto
+                                                            </Button>
+                                                            <Button type="button" variant="outline" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {prizeImage ? (
+                                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                                                <Image src={prizeImage} alt="Imagem do prêmio" fill className="object-cover" />
+                                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setPrizeImage(null); form.setValue('imageUrl', ''); }}>
+                                                                    <X className="h-4 w-4"/>
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <Button type="button" variant="outline" className="w-full h-24" onClick={openCamera}>
+                                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Imagem
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <FormMessage />
                                             </FormItem>
                                         )}
