@@ -83,4 +83,3 @@ export type CobrancaDocument = Omit<Cobranca, 'createdAt'> & {
 export type DespesaDocument = Omit<Despesa, 'createdAt'> & {
   createdAt: Timestamp;
 };
-

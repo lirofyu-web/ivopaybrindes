@@ -1,0 +1,130 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "Represents a client of the business.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "route": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["active", "inactive", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "raspinha": { "type": "number" },
+        "comissao": { "type": "number" },
+        "prizes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prizeId": { "type": "string" },
+              "prizeName": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["name", "phone", "address", "city", "route", "raspinha", "comissao", "createdAt", "status"]
+    },
+    "Prize": {
+      "title": "Prize",
+      "description": "Represents a prize that can be won.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["name", "imageUrl", "quantity"]
+    },
+    "Cobranca": {
+      "title": "Cobranca",
+      "description": "Represents a collection/charge event.",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "route": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "scratchedAmount": { "type": "number" },
+        "scratchPrice": { "type": "number" },
+        "commissionPercentage": { "type": "number" },
+        "grossRevenue": { "type": "number" },
+        "commissionValue": { "type": "number" },
+        "netRevenue": { "type": "number" },
+        "discount": { "type": "number" },
+        "kitStatus": { "type": "string", "enum": ["manteve", "novo"] },
+        "cartelaStatus": { "type": "string", "enum": ["manteve", "nova"] },
+        "prizesGiven": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prizeId": { "type": "string" },
+              "prizeName": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["clientId", "clientName", "route", "createdAt", "scratchedAmount", "scratchPrice", "commissionPercentage", "grossRevenue", "commissionValue", "netRevenue"]
+    },
+    "Despesa": {
+      "title": "Despesa",
+      "description": "Represents an expense.",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "value": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "route": { "type": "string" }
+      },
+      "required": ["description", "value", "createdAt", "route"]
+    },
+    "Route": {
+      "title": "Route",
+      "description": "Represents a client route.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "description"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Stores individual client information."
+    },
+    "/premios/{premioId}": {
+      "schema": { "$ref": "#/entities/Prize" },
+      "description": "Stores prize information and stock."
+    },
+    "/cobrancas/{cobrancaId}": {
+      "schema": { "$ref": "#/entities/Cobranca" },
+      "description": "Stores charge/collection records."
+    },
+    "/despesas/{despesaId}": {
+      "schema": { "$ref": "#/entities/Despesa" },
+      "description": "Stores expense records."
+    },
+    "/rotas/{rotaId}": {
+      "schema": { "$ref": "#/entities/Route" },
+      "description": "Stores route definitions."
+    }
+  }
+}
