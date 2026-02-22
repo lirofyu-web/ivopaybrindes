@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 export default function RotasPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isListCollapsed, setIsListCollapsed] = useState(false);
-    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [fullScreenMode, setFullScreenMode] = useState<'none' | 'map' | 'list'>('none');
 
     const ClientMap = useMemo(() => dynamic(
         () => import('@/components/map/client-map'),
@@ -25,6 +25,8 @@ export default function RotasPage() {
     ), []);
 
     const clientsWithLocation = useMemo(() => mockClients.filter(c => c.location), []);
+    
+    const isFullScreen = fullScreenMode !== 'none';
 
     return (
         <div className={cn(!isFullScreen && "space-y-6")}>
@@ -44,12 +46,13 @@ export default function RotasPage() {
                     : "h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]"
             )}>
                 
+                {/* --- SHARED BUTTONS --- */}
                 <Button
                     size="icon"
                     variant="outline"
                     className={cn(
                         "absolute top-2 left-2 z-20 bg-card/80 backdrop-blur-sm hidden",
-                        isListCollapsed && 'lg:flex'
+                        isListCollapsed && !isFullScreen && 'lg:flex'
                     )}
                     onClick={() => setIsListCollapsed(false)}
                     aria-label="Mostrar lista de clientes"
@@ -60,64 +63,104 @@ export default function RotasPage() {
                 <Button
                     size="icon"
                     variant="outline"
-                    className="absolute top-2 right-2 z-20 bg-card/80 backdrop-blur-sm"
-                    onClick={() => setIsFullScreen(!isFullScreen)}
-                    aria-label={isFullScreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
+                    className={cn(
+                        "absolute top-2 right-2 z-50 bg-card/80 backdrop-blur-sm",
+                        !isFullScreen && 'hidden'
+                    )}
+                    onClick={() => setFullScreenMode('none')}
+                    aria-label="Sair da tela cheia"
                 >
-                    {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                    <Minimize className="h-5 w-5" />
                 </Button>
 
-                <Card className={cn(
-                    "flex flex-col transition-all duration-300 ease-in-out lg:h-full",
-                    "h-1/3",
-                    isListCollapsed ? 'lg:w-0 lg:scale-x-0 lg:opacity-0 lg:p-0 lg:border-0' : 'lg:w-1/3'
-                )} style={{transformOrigin: 'left'}}>
-                    <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 p-4">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <List className="h-6 w-6 shrink-0" />
-                            <CardTitle className="text-xl truncate">Clientes</CardTitle>
-                        </div>
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="hidden lg:flex"
-                            onClick={() => setIsListCollapsed(true)}
-                            aria-label="Esconder lista de clientes"
-                        >
-                            <PanelLeftClose className="h-5 w-5" />
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="p-0 flex-1 overflow-hidden">
-                        <ScrollArea className="h-full px-2">
-                            <div className="space-y-2 py-2">
-                                {clientsWithLocation.map(client => (
-                                    <Button
-                                        key={client.id}
-                                        variant={selectedClient?.id === client.id ? "secondary" : "ghost"}
-                                        className="w-full justify-start h-auto py-2"
-                                        onClick={() => setSelectedClient(client)}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <User className="h-5 w-5 text-muted-foreground" />
-                                            <div className="text-left">
-                                                <p className="font-semibold">{client.name}</p>
-                                                <p className="text-xs text-muted-foreground">{client.city}</p>
-                                            </div>
-                                        </div>
-                                    </Button>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
+                {/* --- RENDER LOGIC --- */}
                 
-                <div className="flex-1 h-2/3 lg:h-full">
-                  <Card className="h-full">
-                      <CardContent className="p-0 h-full">
-                          <ClientMap clients={clientsWithLocation} selectedClient={selectedClient} />
-                      </CardContent>
-                  </Card>
-                </div>
+                {/* List View (Normal or Fullscreen) */}
+                {(fullScreenMode === 'none' || fullScreenMode === 'list') && (
+                    <Card className={cn(
+                        "flex flex-col transition-all duration-300 ease-in-out",
+                        // Fullscreen
+                        fullScreenMode === 'list' && "h-full w-full",
+                        // Normal
+                        fullScreenMode === 'none' && "h-1/3 lg:h-full",
+                        isListCollapsed && fullScreenMode === 'none' ? 'lg:w-0 lg:scale-x-0 lg:opacity-0 lg:p-0 lg:border-0' : 'lg:w-1/3'
+                    )} style={fullScreenMode === 'none' ? {transformOrigin: 'left'} : {}}>
+                        <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 p-4">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <List className="h-6 w-6 shrink-0" />
+                                <CardTitle className="text-xl truncate">Clientes</CardTitle>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={cn(fullScreenMode !== 'none' && "hidden")}
+                                    onClick={() => setFullScreenMode('list')}
+                                    aria-label="Expandir lista"
+                                >
+                                    <Maximize className="h-5 w-5" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={cn("hidden", fullScreenMode === 'none' && "lg:flex")}
+                                    onClick={() => setIsListCollapsed(true)}
+                                    aria-label="Esconder lista de clientes"
+                                >
+                                    <PanelLeftClose className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0 flex-1 overflow-hidden">
+                            <ScrollArea className="h-full px-2">
+                                <div className="space-y-2 py-2">
+                                    {clientsWithLocation.map(client => (
+                                        <Button
+                                            key={client.id}
+                                            variant={selectedClient?.id === client.id ? "secondary" : "ghost"}
+                                            className="w-full justify-start h-auto py-2"
+                                            onClick={() => setSelectedClient(client)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <User className="h-5 w-5 text-muted-foreground" />
+                                                <div className="text-left">
+                                                    <p className="font-semibold">{client.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{client.city}</p>
+                                                </div>
+                                            </div>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                )}
+                
+                {/* Map View (Normal or Fullscreen) */}
+                {(fullScreenMode === 'none' || fullScreenMode === 'map') && (
+                    <div className={cn(
+                        "flex-1",
+                        fullScreenMode === 'map' ? "h-full w-full" : "h-2/3 lg:h-full",
+                    )}>
+                      <Card className="h-full">
+                          <CardContent className="p-0 h-full relative">
+                              <ClientMap clients={clientsWithLocation} selectedClient={selectedClient} />
+                              <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className={cn(
+                                      "absolute top-2 right-2 z-10 bg-card/80 backdrop-blur-sm",
+                                      fullScreenMode !== 'none' && 'hidden'
+                                  )}
+                                  onClick={() => setFullScreenMode('map')}
+                                  aria-label="Expandir mapa"
+                              >
+                                  <Maximize className="h-5 w-5" />
+                              </Button>
+                          </CardContent>
+                      </Card>
+                    </div>
+                )}
             </div>
         </div>
     );
