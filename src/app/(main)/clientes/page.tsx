@@ -87,7 +87,7 @@ function ClientCard({ client, onChargeClick }: { client: Client; onChargeClick: 
         <div className="space-y-2 text-sm text-foreground/80">
             <div className="flex items-center gap-3">
                 <Home className="w-4 h-4 text-muted-foreground" />
-                <span>{client.address}</span>
+                <span>{[client.addressLine1, client.addressLine2].filter(Boolean).join(', ')}</span>
             </div>
             <div className="flex items-center gap-3">
                 <DollarSign className="w-4 h-4 text-muted-foreground" />

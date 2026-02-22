@@ -20,7 +20,8 @@ import { Globe, Loader2 } from 'lucide-react';
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
   phone: z.string().min(10, 'Telefone inválido (inclua DDD).').max(15, 'Telefone inválido.'),
-  address: z.string().optional(),
+  addressLine1: z.string().min(2, 'Endereço (linha 1) deve ter pelo menos 2 caracteres.'),
+  addressLine2: z.string().optional(),
   city: z.string().optional(),
   location: z
     .object({ lat: z.number(), lng: z.number() })
@@ -37,7 +38,8 @@ export function AddClientForm() {
     defaultValues: {
       name: '',
       phone: '',
-      address: '',
+      addressLine1: '',
+      addressLine2: '',
       city: '',
     },
   });
@@ -120,12 +122,25 @@ export function AddClientForm() {
         />
         <FormField
           control={form.control}
-          name="address"
+          name="addressLine1"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Endereço</FormLabel>
+              <FormLabel>Endereço (Linha 1)</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: Rua das Flores, 123" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="addressLine2"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Endereço (Linha 2)</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Apto 4B, Bloco 2" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
