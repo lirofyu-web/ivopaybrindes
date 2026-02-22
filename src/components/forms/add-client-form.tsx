@@ -155,15 +155,49 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
     setIsLocating(true);
     setLocationStatus('Buscando...');
     navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
             const { latitude, longitude } = position.coords;
             form.setValue('location', { lat: latitude, lng: longitude }, { shouldValidate: true });
-            setLocationStatus('Localização salva!');
-            setIsLocating(false);
-            toast({
-                title: 'Localização obtida!',
-                description: 'A localização atual foi salva com sucesso.'
-            })
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+                if (!response.ok) throw new Error('Falha ao buscar endereço.');
+
+                const data = await response.json();
+                
+                if (data.address) {
+                    const city = data.address.city || data.address.town || data.address.village;
+                    const state = data.address.state;
+                    const road = data.address.road;
+                    const house_number = data.address.house_number;
+                    
+                    if (city && state) {
+                        form.setValue('city', `${city} - ${state}`, { shouldValidate: true });
+                    }
+                    if (road) {
+                       form.setValue('address', `${road}${house_number ? ', ' + house_number : ''}`, { shouldValidate: true });
+                    }
+                    toast({
+                        title: 'Localização obtida!',
+                        description: 'Endereço e cidade/estado foram preenchidos.'
+                    })
+                } else {
+                     toast({
+                        title: 'Localização obtida!',
+                        description: 'A localização foi salva, mas não foi possível preencher o endereço.'
+                    })
+                }
+            } catch (error) {
+                console.error("Erro ao buscar endereço reverso:", error);
+                 toast({
+                    title: 'Localização obtida!',
+                    description: 'A localização foi salva, mas ocorreu um erro ao buscar o endereço.',
+                    variant: 'destructive'
+                })
+            } finally {
+                setLocationStatus('Localização salva!');
+                setIsLocating(false);
+            }
         },
         (error) => {
             console.error(error);
