@@ -484,7 +484,7 @@ export default function ClientesPage() {
             )}
         </div>
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Nova Cobrança para {selectedClient?.name}</DialogTitle>
                     <DialogDescription>
