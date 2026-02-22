@@ -6,9 +6,10 @@ import type { Client } from '@/lib/types';
 import { mockClients } from '@/lib/mock-clients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Map as MapIcon, Search } from 'lucide-react';
+import { Loader2, Map as MapIcon, Search, Maximize, Minimize } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const ClientMap = dynamic(() => import('@/components/map/client-map'), {
@@ -21,6 +22,7 @@ export default function MapaPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState<'default' | 'list-full' | 'map-full'>('default');
 
     useEffect(() => {
         try {
@@ -72,9 +74,26 @@ export default function MapaPage() {
                 </h1>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
-                <Card className="md:col-span-1 flex flex-col">
+                <Card className={cn(
+                    "md:col-span-1 flex flex-col",
+                    viewMode === 'map-full' && 'hidden',
+                    viewMode === 'list-full' && 'md:col-span-3'
+                )}>
                     <CardHeader>
-                        <CardTitle>Clientes com Localização</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle>Clientes com Localização</CardTitle>
+                             <div className="hidden md:flex">
+                                {viewMode === 'list-full' ? (
+                                    <Button variant="ghost" size="icon" onClick={() => setViewMode('default')}>
+                                        <Minimize className="h-5 w-5" />
+                                    </Button>
+                                ) : (
+                                    <Button variant="ghost" size="icon" onClick={() => setViewMode('list-full')}>
+                                        <Maximize className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
                          <div className="relative pt-2">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                             <Input 
@@ -109,7 +128,23 @@ export default function MapaPage() {
                         </ScrollArea>
                     </CardContent>
                 </Card>
-                <div className="md:col-span-2 h-full w-full">
+                <div className={cn(
+                    "h-full w-full relative",
+                    viewMode === 'default' && 'md:col-span-2',
+                    viewMode === 'list-full' && 'hidden',
+                    viewMode === 'map-full' && 'md:col-span-3'
+                )}>
+                    <div className="absolute top-2 right-2 z-[1000] hidden md:block">
+                       {viewMode === 'map-full' ? (
+                            <Button variant="secondary" size="icon" onClick={() => setViewMode('default')}>
+                                <Minimize className="h-5 w-5" />
+                            </Button>
+                        ) : (
+                            <Button variant="secondary" size="icon" onClick={() => setViewMode('map-full')}>
+                                <Maximize className="h-5 w-5" />
+                            </Button>
+                        )}
+                    </div>
                     <ClientMap clients={clientsWithLocation} selectedClient={selectedClient} />
                 </div>
             </div>
