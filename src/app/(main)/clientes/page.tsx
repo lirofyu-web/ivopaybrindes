@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import type { Client } from '@/lib/types';
 import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { mockClients } from '@/lib/mock-clients';
 
 // --- ClientCard component ---
 
@@ -87,16 +88,6 @@ function ClientCard({ client }: { client: Client }) {
 }
 
 // --- Main Page Component ---
-const mockClients: Client[] = [
-    { id: '3', name: 'Carlos Pereira', phone: '5531988887777', city: 'Belo Horizonte', status: 'inactive', createdAt: new Date(), address: 'Praça da Liberdade, 789', raspinha: 2.00, comissao: 25 },
-    { id: '6', name: 'Pedro Almeida', phone: '5548987654321', city: 'Belo Horizonte', status: 'active', createdAt: new Date(), address: 'Rua Fictícia, 987', raspinha: 2.00, comissao: 20 },
-    { id: '1', name: 'João da Silva', phone: '5511987654321', city: 'São Paulo', status: 'active', createdAt: new Date(), address: 'Rua Exemplo, 123', raspinha: 2.00, comissao: 25 },
-    { id: '2', name: 'Maria Oliveira', phone: '5521912345678', city: 'Rio de Janeiro', status: 'active', createdAt: new Date(), address: 'Avenida Teste, 456', raspinha: 2.50, comissao: 20 },
-    { id: '4', name: 'Ana Costa', phone: '5571999998888', city: 'Salvador', status: 'pending', createdAt: new Date(), address: 'Largo do Pelourinho, 10', raspinha: 3.00, comissao: 30 },
-    { id: '5', name: 'Francisco Santos', phone: '5585987651234', city: 'Porto Alegre', status: 'active', createdAt: new Date(), address: 'Beira Mar, 777', raspinha: 2.00, comissao: 25 },
-];
-
-
 export default function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 

@@ -27,6 +27,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <meta name="theme-color" content="#3182CE" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin=""/>
       </head>
       <body className="font-body antialiased">
         {children}
