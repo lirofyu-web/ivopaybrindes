@@ -16,16 +16,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { Globe, Loader2, X, ChevronsUpDown, Check } from 'lucide-react';
+import { Globe, Loader2, X } from 'lucide-react';
 import type { Prize, Client } from '@/lib/types';
 import { mockPrizes } from '@/lib/mock-prizes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { mockCities } from '@/lib/mock-cities';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
@@ -50,7 +46,6 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationStatus, setLocationStatus] = useState('Salvar localização atual');
   const [isLocating, setIsLocating] = useState(false);
-  const [openCityPopover, setOpenCityPopover] = useState(false);
 
   const [initialPrizes, setInitialPrizes] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
@@ -233,55 +228,11 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           control={form.control}
           name="city"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
+            <FormItem>
               <FormLabel>Cidade</FormLabel>
-              <Popover open={openCityPopover} onOpenChange={setOpenCityPopover}>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className={cn(
-                        "w-full justify-between",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value
-                        ? field.value
-                        : "Selecione a cidade"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar cidade..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
-                      <CommandGroup>
-                        {mockCities.map((city) => (
-                          <CommandItem
-                            value={city}
-                            key={city}
-                            onSelect={() => {
-                              form.setValue("city", city);
-                              setOpenCityPopover(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                city === field.value ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {city}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <FormControl>
+                <Input placeholder="Ex: Goiânia" {...field} />
+              </FormControl>
               <FormDescription>
                 A cidade onde o cliente está localizado.
               </FormDescription>
