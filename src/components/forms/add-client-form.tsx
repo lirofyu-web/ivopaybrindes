@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -241,10 +242,13 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           name="route"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Rota</FormLabel>
+              <FormLabel>Rota / Região de Cobrança</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Rota 1 / Goiânia" {...field} />
+                <Input placeholder="Ex: Goiânia - Setor Sul" {...field} />
               </FormControl>
+              <FormDescription>
+                Esta região será usada para agrupar clientes e facilitar os acertos e relatórios.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
