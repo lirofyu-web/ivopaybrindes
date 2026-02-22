@@ -22,13 +22,16 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
   const [initializationError, setInitializationError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-        const instances = initializeFirebase();
-        setFirebaseInstances(instances);
-    } catch (e: any) {
-        console.error("Firebase initialization failed:", e);
-        setInitializationError(e.message);
-    }
+    const init = async () => {
+        try {
+            const instances = await initializeFirebase();
+            setFirebaseInstances(instances);
+        } catch (e: any) {
+            console.error("Firebase initialization failed:", e);
+            setInitializationError(e.message);
+        }
+    };
+    init();
   }, []);
 
     if (initializationError) {

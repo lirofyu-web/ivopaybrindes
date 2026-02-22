@@ -1,7 +1,7 @@
 'use client';
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 // Hooks
@@ -18,8 +18,9 @@ export { FirebaseProvider } from './provider';
 let firebaseApp: FirebaseApp;
 let auth: Auth;
 let firestore: Firestore;
+let persistenceEnabled = false;
 
-function initializeFirebase() {
+async function initializeFirebase() {
   if (!getApps().length) {
     firebaseApp = initializeApp(firebaseConfig);
     auth = getAuth(firebaseApp);
@@ -29,6 +30,20 @@ function initializeFirebase() {
     auth = getAuth(firebaseApp);
     firestore = getFirestore(firebaseApp);
   }
+
+  if (!persistenceEnabled) {
+      try {
+        await enableIndexedDbPersistence(firestore)
+        persistenceEnabled = true;
+      } catch (err: any) {
+        if (err.code == 'failed-precondition') {
+          console.warn('Firestore persistence failed. This is likely due to multiple tabs open.');
+        } else if (err.code == 'unimplemented') {
+          console.warn('The current browser does not support all of the features required to enable persistence.');
+        }
+      }
+  }
+
   return { firebaseApp, auth, firestore };
 }
 
