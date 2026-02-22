@@ -13,6 +13,11 @@ export const mockCobrancas: Cobranca[] = [
     grossRevenue: 200.00,
     commissionValue: 50.00,
     netRevenue: 150.00,
+    kitStatus: 'manteve',
+    cartelaStatus: 'nova',
+    prizesGiven: [
+        { prizeId: '1', prizeName: 'Bicicleta', quantity: 1 }
+    ]
   },
   {
     id: '2',
@@ -26,6 +31,8 @@ export const mockCobrancas: Cobranca[] = [
     commissionValue: 75.00,
     discount: 25.00,
     netRevenue: 275.00,
+    kitStatus: 'novo',
+    cartelaStatus: 'nova',
   },
    {
     id: '3',
@@ -38,5 +45,10 @@ export const mockCobrancas: Cobranca[] = [
     grossRevenue: 160.00,
     commissionValue: 40.00,
     netRevenue: 120.00,
+    kitStatus: 'manteve',
+    cartelaStatus: 'manteve',
+    prizesGiven: [
+        { prizeId: '5', prizeName: 'Liquidificador', quantity: 2 }
+    ]
   },
 ];

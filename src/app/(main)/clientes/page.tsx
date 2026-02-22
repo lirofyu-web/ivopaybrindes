@@ -1,9 +1,9 @@
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2 } from 'lucide-react';
+import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Client } from '@/lib/types';
+import type { Client, Prize } from '@/lib/types';
 import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
@@ -14,6 +14,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockPrizes } from '@/lib/mock-prizes';
 
 
 function formatCurrency(value: number) {
@@ -45,6 +48,13 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
 const chargeFormSchema = z.object({
   scratchedAmount: z.coerce.number().min(1, 'A quantidade deve ser pelo menos 1.'),
   discount: z.coerce.number().optional(),
+  kitStatus: z.enum(['manteve', 'novo']).optional(),
+  cartelaStatus: z.enum(['manteve', 'nova']).optional(),
+  prizesGiven: z.array(z.object({
+    prizeId: z.string(),
+    prizeName: z.string(),
+    quantity: z.coerce.number().min(1),
+  })).optional(),
 });
 
 
@@ -114,9 +124,14 @@ export default function ClientesPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const { toast } = useToast();
 
+  // State for prizes in the dialog
+  const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
+  const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
+  const [prizeQuantity, setPrizeQuantity] = useState(1);
+
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
-    defaultValues: { scratchedAmount: 0, discount: 0 },
+    defaultValues: { scratchedAmount: 0, discount: 0, prizesGiven: [] },
   });
   
   const scratchedAmount = form.watch('scratchedAmount');
@@ -138,6 +153,9 @@ export default function ClientesPage() {
     setSelectedClient(client);
     setIsChargeDialogOpen(true);
     form.reset();
+    setPrizesForCharge([]);
+    setSelectedPrizeForAdd(null);
+    setPrizeQuantity(1);
   };
 
   const handleChargeDialogClose = (open: boolean) => {
@@ -147,18 +165,56 @@ export default function ClientesPage() {
     setIsChargeDialogOpen(open);
   }
 
+  const handleAddPrizeToCharge = () => {
+    if (!selectedPrizeForAdd || prizeQuantity <= 0) return;
+    
+    if (prizeQuantity > selectedPrizeForAdd.quantity) {
+        toast({
+            variant: 'destructive',
+            title: 'Estoque Insuficiente',
+            description: `Só existem ${selectedPrizeForAdd.quantity} unidades de ${selectedPrizeForAdd.name} em estoque.`
+        });
+        return;
+    }
+
+    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
+    
+    setPrizesForCharge(prev => {
+        const existingPrizeIndex = prev.findIndex(p => p.prizeId === newPrizeEntry.prizeId);
+        let updatedPrizes;
+        if (existingPrizeIndex > -1) {
+            updatedPrizes = [...prev];
+            updatedPrizes[existingPrizeIndex].quantity += newPrizeEntry.quantity;
+        } else {
+            updatedPrizes = [...prev, newPrizeEntry];
+        }
+        form.setValue('prizesGiven', updatedPrizes);
+        return updatedPrizes;
+    });
+    
+    // Reset fields
+    setSelectedPrizeForAdd(null);
+    setPrizeQuantity(1);
+  };
+  
+  const handleRemovePrizeFromCharge = (prizeId: string) => {
+      const updatedPrizes = prizesForCharge.filter(p => p.prizeId !== prizeId);
+      setPrizesForCharge(updatedPrizes);
+      form.setValue('prizesGiven', updatedPrizes);
+  };
+
   const onChargeSubmit = (values: z.infer<typeof chargeFormSchema>) => {
     setIsSubmittingCharge(true);
     
-    // In a real app, you'd save this to a database.
-    // For now, we just simulate with a toast message.
     console.log({
         clientId: selectedClient?.id,
         ...values,
+        prizesGiven: prizesForCharge,
         ...chargeCalculations
     });
 
     setTimeout(() => {
+      // In a real app, you'd save this to a database and update prize stock.
       toast({
         title: 'Cobrança Salva!',
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
@@ -232,42 +288,146 @@ export default function ClientesPage() {
             )}
         </div>
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Nova Cobrança para {selectedClient?.name}</DialogTitle>
                     <DialogDescription>
-                    Insira a quantidade de raspadinhas vendidas para calcular e salvar a cobrança.
+                    Insira os detalhes da venda para calcular e salvar a cobrança.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="scratchedAmount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Quantidade de Raspadinhas Vendidas</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="Ex: 100" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="discount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Desconto (R$)</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="Ex: 10,00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="scratchedAmount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Qtd. Raspadinhas</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="Ex: 100" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="discount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Desconto (R$)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="Ex: 10,00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         
+                        <Separator/>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="kitStatus"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                        <FormLabel>Kit</FormLabel>
+                                        <FormControl>
+                                            <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="flex flex-col space-y-1"
+                                            >
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl><RadioGroupItem value="manteve" /></FormControl>
+                                                    <FormLabel className="font-normal">Manteve kit</FormLabel>
+                                                </FormItem>
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl><RadioGroupItem value="novo" /></FormControl>
+                                                    <FormLabel className="font-normal">Novo kit</FormLabel>
+                                                </FormItem>
+                                            </RadioGroup>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="cartelaStatus"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                        <FormLabel>Cartela</FormLabel>
+                                        <FormControl>
+                                            <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="flex flex-col space-y-1"
+                                            >
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl><RadioGroupItem value="manteve" /></FormControl>
+                                                    <FormLabel className="font-normal">Manteve cartela</FormLabel>
+                                                </FormItem>
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl><RadioGroupItem value="nova" /></FormControl>
+                                                    <FormLabel className="font-normal">Nova cartela</FormLabel>
+                                                </FormItem>
+                                            </RadioGroup>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <Separator/>
+                        
+                        <div className="space-y-4">
+                            <h4 className="font-medium">Prêmios que saíram</h4>
+                            <div className="space-y-2">
+                                {prizesForCharge.map(p => (
+                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
+                                        <span>{p.prizeName} <span className="text-muted-foreground">x{p.quantity}</span></span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
+                                            <X className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                ))}
+                                {prizesForCharge.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Nenhum prêmio adicionado.</p>}
+                            </div>
+                            <div className="flex gap-2 items-end">
+                                <FormItem className="flex-1">
+                                    <FormLabel>Prêmio</FormLabel>
+                                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(mockPrizes.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione um prêmio" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {mockPrizes.filter(p => p.quantity > 0).map(prize => (
+                                                <SelectItem key={prize.id} value={prize.id}>
+                                                    <div className="flex justify-between w-full">
+                                                        <span>{prize.name}</span>
+                                                        <span className="text-muted-foreground text-xs">Estoque: {prize.quantity}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                                <FormItem className="w-24">
+                                    <FormLabel>Qtd.</FormLabel>
+                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} />
+                                </FormItem>
+                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd}>Adicionar</Button>
+                            </div>
+                        </div>
+
+
                         {scratchedAmount > 0 && selectedClient && (
                             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
                                 <h4 className="font-semibold text-center">Resumo da Cobrança</h4>

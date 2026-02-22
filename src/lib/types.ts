@@ -33,4 +33,11 @@ export type Cobranca = {
   commissionValue: number;
   netRevenue: number;
   discount?: number;
+  kitStatus?: 'manteve' | 'novo';
+  cartelaStatus?: 'manteve' | 'nova';
+  prizesGiven?: {
+      prizeId: string;
+      prizeName: string;
+      quantity: number;
+  }[];
 };

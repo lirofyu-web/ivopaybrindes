@@ -36,7 +36,9 @@ export default function CobrancaPage() {
                         <TableRow>
                             <TableHead>Cliente</TableHead>
                             <TableHead className="text-center">Data</TableHead>
-                            <TableHead className="text-right">Qtd. Raspadinhas</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Prêmios</TableHead>
+                            <TableHead className="text-right">Qtd. Rasp.</TableHead>
                             <TableHead className="text-right">Total Bruto</TableHead>
                             <TableHead className="text-right">Comissão</TableHead>
                             <TableHead className="text-right">Desconto</TableHead>
@@ -51,6 +53,21 @@ export default function CobrancaPage() {
                                     <TableRow key={cobranca.id}>
                                         <TableCell className="font-medium">{cobranca.clientName}</TableCell>
                                         <TableCell className="text-center text-muted-foreground">{formatDate(cobranca.createdAt)}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col text-xs text-muted-foreground">
+                                                {cobranca.kitStatus && <span>Kit: <span className="font-medium text-foreground">{cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></span>}
+                                                {cobranca.cartelaStatus && <span>Cartela: <span className="font-medium text-foreground">{cobranca.cartelaStatus === 'nova' ? 'Nova' : 'Manteve'}</span></span>}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {cobranca.prizesGiven && cobranca.prizesGiven.length > 0 ? (
+                                                <ul className="text-xs list-disc list-inside">
+                                                    {cobranca.prizesGiven.map(p => <li key={p.prizeId}>{p.prizeName} (x{p.quantity})</li>)}
+                                                </ul>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">Nenhum</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">{cobranca.scratchedAmount}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(cobranca.grossRevenue)}</TableCell>
                                         <TableCell className="text-right text-destructive">-{formatCurrency(cobranca.commissionValue)}</TableCell>
@@ -60,7 +77,7 @@ export default function CobrancaPage() {
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={9} className="h-24 text-center">
                                     Nenhuma cobrança registrada.
                                 </TableCell>
                             </TableRow>
