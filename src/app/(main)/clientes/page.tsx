@@ -139,6 +139,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 // --- Main Page Component ---
 export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
@@ -172,6 +173,7 @@ export default function ClientesPage() {
       console.error("Failed to read clients from localStorage", error);
       setClients(mockClients);
     }
+    setIsLoading(false);
   }, []);
 
   const form = useForm<z.infer<typeof chargeFormSchema>>({
@@ -340,6 +342,31 @@ export default function ClientesPage() {
       return acc;
     }, {} as Record<string, Client[]>);
   }, [filteredClients]);
+
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                    <h1 className="text-3xl font-bold font-headline">
+                        Gerenciar Clientes
+                    </h1>
+                </div>
+                <Link href="/clientes/novo">
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Novo Cliente
+                    </Button>
+                </Link>
+            </div>
+            <div className="text-center py-12 text-muted-foreground">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+                <p className="mt-4">Carregando clientes...</p>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

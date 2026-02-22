@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { mockClients } from '@/lib/mock-clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map as MapIcon, List, User, PanelLeftClose, PanelLeftOpen, Maximize, Minimize } from 'lucide-react';
+import { Map as MapIcon, List, User, PanelLeftClose, PanelLeftOpen, Maximize, Minimize, Loader2 } from 'lucide-react';
 import type { Client } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ export default function RotasPage() {
     const [isListCollapsed, setIsListCollapsed] = useState(false);
     const [fullScreenMode, setFullScreenMode] = useState<'none' | 'map' | 'list'>('none');
     const [clients, setClients] = useState<Client[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         try {
@@ -37,6 +38,7 @@ export default function RotasPage() {
           console.error("Failed to read clients from localStorage", error);
           setClients(mockClients);
         }
+        setIsLoading(false);
       }, []);
 
     const ClientMap = useMemo(() => dynamic(
@@ -67,6 +69,22 @@ export default function RotasPage() {
     }, [clientsWithLocation]);
 
     const isFullScreen = fullScreenMode !== 'none';
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <MapIcon className="h-8 w-8 text-muted-foreground" />
+                    <h1 className="text-3xl font-bold font-headline">
+                        Rotas de Clientes
+                    </h1>
+                </div>
+                <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+                    <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={cn(!isFullScreen && "space-y-6")}>
