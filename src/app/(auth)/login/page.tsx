@@ -3,22 +3,33 @@
 import { AppLogo } from '@/components/layout/logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { useUser } from '@/firebase';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { getAuth, signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Loader2 } from 'lucide-react';
 
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M21.328 12.373c0-7.36-5.968-13.328-13.328-13.328-7.36 0-13.328 5.969-13.328 13.328 0 6.578 4.773 12.04 11.034 13.13v-9.283h-3.32v-3.847h3.32v-2.93c0-3.287 1.99-5.11 4.97-5.11 1.42 0 2.64.106 2.995.153v3.44h-2.035c-1.595 0-1.905.758-1.905 1.87v2.472h3.81l-.496 3.848h-3.315v9.283c6.26-.09 11.034-5.552 11.034-13.13z" fillRule="evenodd" clipRule="evenodd" />
-    </svg>
-  );
-}
+const loginSchema = z.object({
+    email: z.string().email('Por favor, insira um e-mail válido.'),
+    password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+});
 
 export default function LoginPage() {
     const { user, isLoading } = useUser();
     const router = useRouter();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<z.infer<typeof loginSchema>>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: '', password: '' },
+    });
 
     useEffect(() => {
         if (!isLoading && user) {
@@ -26,14 +37,25 @@ export default function LoginPage() {
         }
     }, [user, isLoading, router]);
 
-
-    const handleLogin = async () => {
+    const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+        setIsSubmitting(true);
         const auth = getAuth();
-        const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            await signInWithEmailAndPassword(auth, values.email, values.password);
         } catch (error) {
-            console.error('Error during Google sign-in:', error);
+            console.error('Error during email/password sign-in:', error);
+            const authError = error as AuthError;
+            let message = 'Ocorreu um erro ao tentar fazer login.';
+            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
+                message = 'E-mail ou senha inválidos. Verifique suas credenciais.';
+            }
+            toast({
+                variant: 'destructive',
+                title: 'Erro de Login',
+                description: message,
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -49,13 +71,43 @@ export default function LoginPage() {
                         <AppLogo />
                     </div>
                     <CardTitle>Bem-vindo!</CardTitle>
-                    <CardDescription>Faça login com sua conta Google para continuar.</CardDescription>
+                    <CardDescription>Faça login com seu e-mail e senha para continuar.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button className="w-full" onClick={handleLogin}>
-                        <GoogleIcon className="mr-2 h-5 w-5" />
-                        Entrar com Google
-                    </Button>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>E-mail</FormLabel>
+                                        <FormControl>
+                                            <Input type="email" placeholder="seuemail@exemplo.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Senha</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="Sua senha" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Entrar
+                            </Button>
+                        </form>
+                    </Form>
                 </CardContent>
             </Card>
         </div>
