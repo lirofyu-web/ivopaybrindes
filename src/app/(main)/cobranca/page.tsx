@@ -1,19 +1,22 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { DollarSign, Filter, Printer, Calendar as CalendarIcon } from "lucide-react";
+import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { mockCobrancas } from '@/lib/mock-cobrancas';
-import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import type { Route } from "@/lib/types";
+import type { Route, Cobranca } from "@/lib/types";
 import { mockRoutes } from "@/lib/mock-routes";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import ReactDOMServer from 'react-dom/server';
+import { Receipt } from '@/components/receipt';
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -24,11 +27,19 @@ function formatDate(date: Date) {
 }
 
 export default function CobrancaPage() {
+    const [cobrancas, setCobrancas] = useState<Cobranca[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
     const [routes, setRoutes] = useState<Route[]>([]);
+    const { toast } = useToast();
 
-     useEffect(() => {
+    // Delete dialog state
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [cobrancaToDelete, setCobrancaToDelete] = useState<Cobranca | null>(null);
+
+    // Load data from localStorage
+    useEffect(() => {
         try {
             const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
             if (storedRoutesRaw) {
@@ -37,10 +48,25 @@ export default function CobrancaPage() {
                 localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
                 setRoutes(mockRoutes);
             }
+
+            const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
+            if (storedCobrancasRaw) {
+                 const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
+                    ...c,
+                    createdAt: new Date(c.createdAt),
+                }));
+                setCobrancas(parsedCobrancas);
+            } else {
+                localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
+                setCobrancas(mockCobrancas);
+            }
+
         } catch (error) {
-            console.error("Failed to read routes from localStorage", error);
+            console.error("Failed to read data from localStorage", error);
             setRoutes(mockRoutes);
+            setCobrancas(mockCobrancas);
         }
+        setIsLoading(false);
     }, []);
 
     const routeOptions = useMemo(() => {
@@ -48,7 +74,7 @@ export default function CobrancaPage() {
     }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
-        const sorted = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const sorted = [...cobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
         return sorted.filter(c => {
             const routeMatch = selectedRoute === 'all' || c.route === selectedRoute;
@@ -57,17 +83,17 @@ export default function CobrancaPage() {
             if (date?.from) {
                 const fromDate = new Date(date.from);
                 fromDate.setHours(0, 0, 0, 0);
-                dateMatch = c.createdAt >= fromDate;
+                dateMatch = new Date(c.createdAt) >= fromDate;
             }
             if (date?.to) {
                 const toDate = new Date(date.to);
                 toDate.setHours(23, 59, 59, 999);
-                dateMatch = dateMatch && c.createdAt <= toDate;
+                dateMatch = dateMatch && new Date(c.createdAt) <= toDate;
             }
             
             return routeMatch && dateMatch;
         });
-    }, [selectedRoute, date]);
+    }, [cobrancas, selectedRoute, date]);
 
     const reportTotals = useMemo(() => {
         return filteredCobrancas.reduce((acc, cobranca) => {
@@ -97,19 +123,17 @@ export default function CobrancaPage() {
             return;
         }
 
-        // Get all style/link tags from the main document head
         const pageStyles = document.head.innerHTML;
-
-        // Clone the content to manipulate it for the popup
         const contentClone = reportContentNode.cloneNode(true) as HTMLElement;
         const printHeader = contentClone.querySelector('.print-only-header');
         
-        // The print header is hidden by default on screen, let's show it in the popup
         if (printHeader) {
             printHeader.classList.remove('hidden');
         }
+        
+        // Remove actions column header and cells from clone
+        contentClone.querySelectorAll('.actions-col').forEach(el => el.remove());
 
-        // Construct the full HTML for the new window
         printWindow.document.write(`
             <html>
                 <head>
@@ -123,13 +147,94 @@ export default function CobrancaPage() {
         `);
 
         printWindow.document.close();
-
-        // Use a timeout to ensure all assets are loaded before triggering print
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
         }, 500);
     };
+    
+    const handlePrintReceipt = (cobranca: Cobranca) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao imprimir',
+                description: 'Por favor, habilite pop-ups para gerar o recibo.',
+            });
+            return;
+        }
+        
+        const receiptHtml = ReactDOMServer.renderToString(
+          <Receipt cobranca={cobranca} />
+        );
+
+        const pageStyles = document.head.innerHTML;
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Recibo - ${cobranca.clientName}</title>
+                    ${pageStyles}
+                    <style>
+                        @media print {
+                            @page { 
+                                size: 80mm auto;
+                                margin: 0;
+                            }
+                            body {
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                        }
+                        body {
+                            width: 80mm;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                    </style>
+                </head>
+                <body class="light">
+                    ${receiptHtml}
+                </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+        }, 500);
+    };
+
+    const handleDeleteRequest = (cobranca: Cobranca) => {
+        setCobrancaToDelete(cobranca);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (!cobrancaToDelete) return;
+        
+        const updatedCobrancas = cobrancas.filter((c) => c.id !== cobrancaToDelete.id);
+        localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(updatedCobrancas));
+        setCobrancas(updatedCobrancas);
+
+        toast({
+            title: 'Cobrança Excluída!',
+            description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`,
+            variant: 'destructive'
+        });
+        setIsDeleteDialogOpen(false);
+        setCobrancaToDelete(null);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
 
   return (
     <div className="space-y-6">
@@ -227,6 +332,7 @@ export default function CobrancaPage() {
                             <TableHead className="text-right">Comissão</TableHead>
                             <TableHead className="text-right">Desconto</TableHead>
                             <TableHead className="text-right">Valor Líquido</TableHead>
+                            <TableHead className="text-right print:hidden actions-col">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -236,7 +342,7 @@ export default function CobrancaPage() {
                                     <TableRow key={cobranca.id}>
                                         <TableCell className="font-medium">{cobranca.clientName}</TableCell>
                                         <TableCell className="text-muted-foreground">{cobranca.route}</TableCell>
-                                        <TableCell className="text-center text-muted-foreground">{formatDate(cobranca.createdAt)}</TableCell>
+                                        <TableCell className="text-center text-muted-foreground">{formatDate(new Date(cobranca.createdAt))}</TableCell>
                                         <TableCell className="print:hidden">
                                             <div className="flex flex-col text-xs text-muted-foreground">
                                                 {cobranca.kitStatus && <span>Kit: <span className="font-medium text-foreground">{cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></span>}
@@ -257,11 +363,23 @@ export default function CobrancaPage() {
                                         <TableCell className="text-right text-destructive">-{formatCurrency(cobranca.commissionValue)}</TableCell>
                                         <TableCell className="text-right text-destructive">{cobranca.discount ? `-${formatCurrency(cobranca.discount)}` : formatCurrency(0)}</TableCell>
                                         <TableCell className="text-right font-semibold text-primary">{formatCurrency(cobranca.netRevenue)}</TableCell>
+                                        <TableCell className="print:hidden actions-col">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePrintReceipt(cobranca)}>
+                                                    <Printer className="h-4 w-4" />
+                                                    <span className="sr-only">Imprimir Recibo</span>
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteRequest(cobranca)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                    <span className="sr-only">Excluir Cobrança</span>
+                                                </Button>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-24 text-center">
+                                <TableCell colSpan={11} className="h-24 text-center">
                                     Nenhuma cobrança registrada para os filtros selecionados.
                                 </TableCell>
                             </TableRow>
@@ -276,12 +394,32 @@ export default function CobrancaPage() {
                                 <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalCommission)}</TableCell>
                                 <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalDiscount)}</TableCell>
                                 <TableCell className="text-right text-primary">{formatCurrency(reportTotals.totalNet)}</TableCell>
+                                <TableCell className="print:hidden actions-col"></TableCell>
                             </TableRow>
                         </TableFooter>
                     )}
                 </Table>
             </CardContent>
         </Card>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. A cobrança para <span className="font-bold">{cobrancaToDelete?.clientName}</span> será excluída permanentemente.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setCobrancaToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                        className={buttonVariants({ variant: "destructive" })}
+                        onClick={handleConfirmDelete}
+                    >
+                        Excluir
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }

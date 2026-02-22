@@ -13,10 +13,11 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { mockPrizes } from '@/lib/mock-prizes';
-import type { Route } from '@/lib/types';
+import type { Route, Cobranca } from '@/lib/types';
 import { mockRoutes } from '@/lib/mock-routes';
 
 export default function RelatoriosPage() {
+    const [cobrancas, setCobrancas] = useState<Cobranca[]>([]);
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
     const [routes, setRoutes] = useState<Route[]>([]);
@@ -30,9 +31,22 @@ export default function RelatoriosPage() {
                 localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
                 setRoutes(mockRoutes);
             }
+            
+            const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
+            if (storedCobrancasRaw) {
+                const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
+                    ...c,
+                    createdAt: new Date(c.createdAt),
+                }));
+                setCobrancas(parsedCobrancas);
+            } else {
+                localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
+                setCobrancas(mockCobrancas);
+            }
         } catch (error) {
-            console.error("Failed to read routes from localStorage", error);
+            console.error("Failed to read data from localStorage", error);
             setRoutes(mockRoutes);
+            setCobrancas(mockCobrancas);
         }
     }, []);
 
@@ -41,7 +55,7 @@ export default function RelatoriosPage() {
     }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
-        const sorted = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const sorted = [...cobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
         return sorted.filter(c => {
             const routeMatch = selectedRoute === 'all' || c.route === selectedRoute;
@@ -50,17 +64,17 @@ export default function RelatoriosPage() {
             if (date?.from) {
                 const fromDate = new Date(date.from);
                 fromDate.setHours(0, 0, 0, 0);
-                dateMatch = c.createdAt >= fromDate;
+                dateMatch = new Date(c.createdAt) >= fromDate;
             }
             if (date?.to) {
                 const toDate = new Date(date.to);
                 toDate.setHours(23, 59, 59, 999);
-                dateMatch = dateMatch && c.createdAt <= toDate;
+                dateMatch = dateMatch && new Date(c.createdAt) <= toDate;
             }
             
             return routeMatch && dateMatch;
         });
-    }, [selectedRoute, date]);
+    }, [cobrancas, selectedRoute, date]);
 
     const reportData = useMemo(() => {
         const data = {

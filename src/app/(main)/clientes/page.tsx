@@ -130,6 +130,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 // --- Main Page Component ---
 export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [allCobrancas, setAllCobrancas] = useState<Cobranca[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
@@ -139,10 +140,7 @@ export default function ClientesPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
   const [routes, setRoutes] = useState<Route[]>([]);
-
-  const [newlyAddedCobrancas, setNewlyAddedCobrancas] = useState<Cobranca[]>([]);
-  const allCobrancas = useMemo(() => [...newlyAddedCobrancas, ...mockCobrancas], [newlyAddedCobrancas]);
-
+  
   // State for prizes in the dialog
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
@@ -170,10 +168,23 @@ export default function ClientesPage() {
           setRoutes(mockRoutes);
       }
 
+      const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
+      if (storedCobrancasRaw) {
+        const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+        }));
+        setAllCobrancas(parsedCobrancas);
+      } else {
+        localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
+        setAllCobrancas(mockCobrancas);
+      }
+
     } catch (error) {
       console.error("Failed to read data from localStorage", error);
       setClients(mockClients);
       setRoutes(mockRoutes);
+      setAllCobrancas(mockCobrancas);
     }
     setIsLoading(false);
   }, []);
@@ -350,9 +361,9 @@ export default function ClientesPage() {
         prizesGiven: prizesForCharge,
     };
     
-    console.log(newCharge);
-
-    setNewlyAddedCobrancas(prev => [newCharge, ...prev]);
+    const updatedCobrancas = [newCharge, ...allCobrancas];
+    localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(updatedCobrancas));
+    setAllCobrancas(updatedCobrancas);
 
     toast({
       title: 'Cobrança Salva!',
@@ -377,11 +388,11 @@ export default function ClientesPage() {
     const statusMap = new Map<string, 'visited' | 'not-visited'>();
     const now = new Date();
     
-    const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const sortedCobrancas = [...allCobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     clients.forEach(client => {
       const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
-      if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
+      if (lastCharge && differenceInDays(now, new Date(lastCharge.createdAt)) <= 25) {
         statusMap.set(client.id, 'visited');
       } else {
         statusMap.set(client.id, 'not-visited');
