@@ -40,7 +40,7 @@ export default function AppSidebar() {
   return (
     <Sidebar
       className="border-r bg-sidebar print:hidden"
-      collapsible={isMobile ? 'offcanvas' : 'icon'}
+      collapsible="offcanvas"
     >
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between">
