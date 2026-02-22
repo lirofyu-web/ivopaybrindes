@@ -84,7 +84,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
                     </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <p>{client.city}</p>
+                    <p>{client.route}</p>
                     <span className="text-xs">&bull;</span>
                     <span className="flex items-center gap-1.5">
                         <span className={`w-2 h-2 rounded-full ${statusColor}`}></span>
@@ -250,6 +250,7 @@ export default function ClientesPage() {
         id: `cobranca-${Date.now()}`,
         clientId: selectedClient.id,
         clientName: selectedClient.name,
+        route: selectedClient.route,
         createdAt: new Date(),
         scratchedAmount: values.scratchedAmount,
         scratchPrice: selectedClient.raspinha,
@@ -283,7 +284,7 @@ export default function ClientesPage() {
     if (!searchTerm) return clients;
     return clients.filter(client => 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.city.toLowerCase().includes(searchTerm.toLowerCase())
+        client.route.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm, clients]);
 
@@ -304,13 +305,13 @@ export default function ClientesPage() {
     return statusMap;
   }, [allCobrancas, clients]);
 
-  const clientsByCity = useMemo(() => {
+  const clientsByRoute = useMemo(() => {
     return filteredClients.reduce((acc, client) => {
-      const city = client.city;
-      if (!acc[city]) {
-        acc[city] = [];
+      const route = client.route;
+      if (!acc[route]) {
+        acc[route] = [];
       }
-      acc[city].push(client);
+      acc[route].push(client);
       return acc;
     }, {} as Record<string, Client[]>);
   }, [filteredClients]);
@@ -335,7 +336,7 @@ export default function ClientesPage() {
         <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
-                placeholder="Buscar por nome ou cidade..."
+                placeholder="Buscar por nome ou rota..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -343,9 +344,9 @@ export default function ClientesPage() {
         </div>
 
         <div className="space-y-8">
-            {Object.entries(clientsByCity).sort(([cityA], [cityB]) => cityA.localeCompare(cityB)).map(([city, clients]) => (
-                <div key={city} className="space-y-4">
-                    <h2 className="text-xl font-semibold border-b border-border pb-2">{city}</h2>
+            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([route, clients]) => (
+                <div key={route} className="space-y-4">
+                    <h2 className="text-xl font-semibold border-b border-border pb-2">{route}</h2>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {clients.map(client => (
                             <ClientCard 

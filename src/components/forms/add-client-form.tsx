@@ -26,7 +26,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
   phone: z.string().min(10, 'Telefone inválido (inclua DDD).').max(15, 'Telefone inválido.'),
   address: z.string().min(2, 'Endereço deve ter pelo menos 2 caracteres.'),
-  city: z.string().optional(),
+  route: z.string().min(2, 'A rota deve ter pelo menos 2 caracteres.'),
   raspinha: z.coerce.number().min(0, 'O valor deve ser positivo.'),
   comissao: z.coerce.number().min(0, 'A comissão deve ser positiva.').max(100, 'A comissão não pode passar de 100%.'),
   location: z
@@ -55,14 +55,14 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
     resolver: zodResolver(formSchema),
     defaultValues: isEditing ? {
       ...client,
-      city: client.city || '',
+      route: client.route || '',
       // Assuming prizes are not part of the initial client object for editing for now
       prizes: client.prizes || [] 
     } : {
       name: '',
       phone: '',
       address: '',
-      city: '',
+      route: '',
       raspinha: 2.0,
       comissao: 25,
       prizes: []
@@ -222,12 +222,12 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
         />
         <FormField
           control={form.control}
-          name="city"
+          name="route"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cidade</FormLabel>
+              <FormLabel>Rota</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: São Paulo" {...field} />
+                <Input placeholder="Ex: Rota 1 / Goiânia" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

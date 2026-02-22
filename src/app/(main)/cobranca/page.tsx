@@ -1,9 +1,11 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign } from "lucide-react";
+import { DollarSign, Filter } from "lucide-react";
 import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -14,6 +16,22 @@ function formatDate(date: Date) {
 }
 
 export default function CobrancaPage() {
+    const [selectedRoute, setSelectedRoute] = useState('all');
+
+    const routes = useMemo(() => {
+        const allRoutes = mockCobrancas.map(c => c.route);
+        return ['all', ...Array.from(new Set(allRoutes))];
+    }, []);
+
+    const filteredCobrancas = useMemo(() => {
+        const sorted = [...mockCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        if (selectedRoute === 'all') {
+            return sorted;
+        }
+        return sorted.filter(c => c.route === selectedRoute);
+    }, [selectedRoute]);
+
+
   return (
     <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -25,16 +43,34 @@ export default function CobrancaPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Cobranças Realizadas</CardTitle>
-                <CardDescription>
-                    Aqui está a lista de todas as cobranças salvas no sistema.
-                </CardDescription>
+                <div className="flex sm:flex-row flex-col sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Cobranças Realizadas</CardTitle>
+                        <CardDescription>
+                            Aqui está a lista de todas as cobranças salvas no sistema.
+                        </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <Select value={selectedRoute} onValueChange={setSelectedRoute}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Filtrar por Rota" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {routes.map(route => (
+                                    <SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Cliente</TableHead>
+                            <TableHead>Rota</TableHead>
                             <TableHead className="text-center">Data</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Prêmios</TableHead>
@@ -46,12 +82,12 @@ export default function CobrancaPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockCobrancas.length > 0 ? (
-                            mockCobrancas
-                                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                        {filteredCobrancas.length > 0 ? (
+                            filteredCobrancas
                                 .map((cobranca) => (
                                     <TableRow key={cobranca.id}>
                                         <TableCell className="font-medium">{cobranca.clientName}</TableCell>
+                                        <TableCell className="text-muted-foreground">{cobranca.route}</TableCell>
                                         <TableCell className="text-center text-muted-foreground">{formatDate(cobranca.createdAt)}</TableCell>
                                         <TableCell>
                                             <div className="flex flex-col text-xs text-muted-foreground">
@@ -77,8 +113,8 @@ export default function CobrancaPage() {
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-24 text-center">
-                                    Nenhuma cobrança registrada.
+                                <TableCell colSpan={10} className="h-24 text-center">
+                                    Nenhuma cobrança registrada para a rota selecionada.
                                 </TableCell>
                             </TableRow>
                         )}

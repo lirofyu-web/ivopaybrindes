@@ -48,7 +48,7 @@ const ClientMap = ({ clients, selectedClient }: ClientMapProps) => {
                     <Popup>
                        <strong>{client.name}</strong><br />
                        {client.address}<br />
-                       {client.city}
+                       {client.route}
                     </Popup>
                 </Marker>
             ))}

@@ -3,7 +3,7 @@ export type Client = {
   name: string;
   phone: string;
   address: string;
-  city: string;
+  route: string;
   location?: {
     lat: number;
     lng: number;
@@ -25,6 +25,7 @@ export type Cobranca = {
   id: string;
   clientId: string;
   clientName: string;
+  route: string;
   createdAt: Date;
   scratchedAmount: number;
   scratchPrice: number;

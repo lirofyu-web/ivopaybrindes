@@ -148,7 +148,7 @@ export default function RotasPage() {
                                                     <div className="text-left flex-1">
                                                         <p className="font-semibold">{client.name}</p>
                                                         <div className="flex items-center justify-between">
-                                                            <p className="text-xs text-muted-foreground">{client.city}</p>
+                                                            <p className="text-xs text-muted-foreground">{client.route}</p>
                                                             <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-xs font-normal">
                                                                 {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
                                                             </Badge>
