@@ -111,7 +111,6 @@ export default function CobrancaPage() {
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
-            printWindow.close();
         }, 500);
     };
 
