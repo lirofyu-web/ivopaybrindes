@@ -7,7 +7,7 @@ import {
   CircleDot,
   DollarSign,
   Gift,
-  Receipt,
+  TrendingDown,
   Settings,
   Users,
 } from 'lucide-react';
@@ -29,7 +29,7 @@ const navItems = [
   { href: '/premios', label: 'Prêmios', icon: Gift, className: 'text-rose-400' },
   { href: '/cobranca', label: 'Cobrança', icon: DollarSign, className: 'text-emerald-400' },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart, className: 'text-orange-400' },
-  { href: '/despesas', label: 'Despesas', icon: Receipt, className: 'text-purple-400' },
+  { href: '/despesas', label: 'Despesas', icon: TrendingDown, className: 'text-purple-400' },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 

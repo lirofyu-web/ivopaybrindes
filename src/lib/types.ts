@@ -48,3 +48,11 @@ export type Cobranca = {
       quantity: number;
   }[];
 };
+
+export type Despesa = {
+  id: string;
+  description: string;
+  value: number;
+  createdAt: Date;
+  route: string;
+};
