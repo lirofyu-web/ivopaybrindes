@@ -7,8 +7,8 @@ import {
   CircleDot,
   DollarSign,
   Gift,
+  Receipt,
   Settings,
-  TrendingDown,
   Users,
 } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const navItems = [
   { href: '/premios', label: 'Prêmios', icon: Gift, className: 'text-rose-400' },
   { href: '/cobranca', label: 'Cobrança', icon: DollarSign, className: 'text-emerald-400' },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart, className: 'text-orange-400' },
-  { href: '/despesas', label: 'Despesas', icon: TrendingDown, className: 'text-purple-400' },
+  { href: '/despesas', label: 'Despesas', icon: Receipt, className: 'text-purple-400' },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
@@ -45,9 +45,10 @@ export default function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between">
           <Link href="/clientes" className="flex items-center gap-2">
-            <h1 className="text-xl font-bold font-headline text-foreground group-data-[collapsible=icon]:hidden">
-              MRD BRINDES
-            </h1>
+            <div className="flex items-baseline gap-1.5 text-xl font-bold font-headline text-foreground group-data-[collapsible=icon]:hidden">
+                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-sm">MRD</span>
+                <span className="text-lg font-medium tracking-wider">BRINDES</span>
+            </div>
           </Link>
           <div className="group-data-[collapsible=icon]:hidden">
             {!isMobile && <SidebarTrigger />}
