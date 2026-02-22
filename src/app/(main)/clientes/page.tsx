@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
+import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
@@ -95,7 +95,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
         <div className="space-y-2 text-sm text-foreground/80">
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block hover:underline">
                 <div className="flex items-center gap-3">
-                    <Home className="w-4 h-4 text-muted-foreground" />
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
                     <span>{client.address}, {client.city}</span>
                 </div>
             </a>
