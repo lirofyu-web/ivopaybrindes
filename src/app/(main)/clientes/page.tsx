@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +21,7 @@ import { mockPrizes } from '@/lib/mock-prizes';
 import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { Badge } from '@/components/ui/badge';
 import { differenceInDays } from 'date-fns';
+import { buttonVariants } from '@/components/ui/button';
 
 
 function formatCurrency(value: number) {
@@ -62,7 +64,7 @@ const chargeFormSchema = z.object({
 
 
 // --- ClientCard component ---
-function ClientCard({ client, onChargeClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
+function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
   const statusColor =
     client.status === 'active'
       ? 'bg-green-500'
@@ -121,7 +123,7 @@ function ClientCard({ client, onChargeClick, visitStatus }: { client: Client; on
                   <Edit className="h-4 w-4" />
               </Button>
             </Link>
-            <Button size="icon" variant="outline" className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400">
+            <Button size="icon" variant="outline" className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400" onClick={() => onDeleteClick(client)}>
                 <Trash2 className="h-4 w-4" />
             </Button>
         </div>
@@ -132,10 +134,13 @@ function ClientCard({ client, onChargeClick, visitStatus }: { client: Client; on
 
 // --- Main Page Component ---
 export default function ClientesPage() {
+  const [clients, setClients] = useState<Client[]>(mockClients);
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
 
   const [newlyAddedCobrancas, setNewlyAddedCobrancas] = useState<Cobranca[]>([]);
@@ -181,6 +186,23 @@ export default function ClientesPage() {
     }
     setIsChargeDialogOpen(open);
   }
+
+  const handleDeleteRequest = (client: Client) => {
+    setClientToDelete(client);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!clientToDelete) return;
+    setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
+    toast({
+      title: 'Cliente Excluído!',
+      description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
+      variant: 'destructive'
+    });
+    setIsDeleteDialogOpen(false);
+    setClientToDelete(null);
+  };
 
   const handleAddPrizeToCharge = () => {
     if (!selectedPrizeForAdd || prizeQuantity <= 0) return;
@@ -258,12 +280,12 @@ export default function ClientesPage() {
   };
 
   const filteredClients = useMemo(() => {
-    if (!searchTerm) return mockClients;
-    return mockClients.filter(client => 
+    if (!searchTerm) return clients;
+    return clients.filter(client => 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, clients]);
 
   const clientVisitStatus = useMemo(() => {
     const statusMap = new Map<string, 'visited' | 'not-visited'>();
@@ -271,7 +293,7 @@ export default function ClientesPage() {
     
     const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    mockClients.forEach(client => {
+    clients.forEach(client => {
       const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
       if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
         statusMap.set(client.id, 'visited');
@@ -280,7 +302,7 @@ export default function ClientesPage() {
       }
     });
     return statusMap;
-  }, [allCobrancas]);
+  }, [allCobrancas, clients]);
 
   const clientsByCity = useMemo(() => {
     return filteredClients.reduce((acc, client) => {
@@ -330,6 +352,7 @@ export default function ClientesPage() {
                                 key={client.id} 
                                 client={client} 
                                 onChargeClick={handleOpenChargeDialog}
+                                onDeleteClick={handleDeleteRequest}
                                 visitStatus={clientVisitStatus.get(client.id) || 'not-visited'}
                              />
                         ))}
@@ -518,6 +541,27 @@ export default function ClientesPage() {
                 </Form>
             </DialogContent>
         </Dialog>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
+                        <span className="font-bold"> {clientToDelete?.name} </span>
+                        e todos os seus dados associados.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                        className={buttonVariants({ variant: "destructive" })}
+                        onClick={handleConfirmDelete}
+                    >
+                        Excluir
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
