@@ -1,15 +1,26 @@
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign } from 'lucide-react';
+import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client } from '@/lib/types';
 import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Separator } from '@/components/ui/separator';
 
-// --- ClientCard component ---
 
+function formatCurrency(value: number) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// --- WhatsApp Icon ---
 function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -30,7 +41,14 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function ClientCard({ client }: { client: Client }) {
+// --- Charge Form Schema ---
+const chargeFormSchema = z.object({
+  scratchedAmount: z.coerce.number().min(1, 'A quantidade deve ser pelo menos 1.'),
+});
+
+
+// --- ClientCard component ---
+function ClientCard({ client, onChargeClick }: { client: Client; onChargeClick: (client: Client) => void; }) {
   const statusColor =
     client.status === 'active'
       ? 'bg-green-500'
@@ -62,7 +80,7 @@ function ClientCard({ client }: { client: Client }) {
             </div>
             <div className="flex items-center gap-3">
                 <DollarSign className="w-4 h-4 text-muted-foreground" />
-                <span>Raspinha: R$ {client.raspinha.toFixed(2)}</span>
+                <span>Raspinha: {formatCurrency(client.raspinha)}</span>
             </div>
             <div className="flex items-center gap-3">
                 <Percent className="w-4 h-4 text-muted-foreground" />
@@ -71,7 +89,7 @@ function ClientCard({ client }: { client: Client }) {
         </div>
 
         <div className="flex items-center gap-2 pt-2">
-            <Button size="sm" className="flex-1">
+            <Button size="sm" className="flex-1" onClick={() => onChargeClick(client)}>
                 <DollarSign className="mr-2 h-4 w-4" />
                 Nova Cobrança
             </Button>
@@ -90,6 +108,62 @@ function ClientCard({ client }: { client: Client }) {
 // --- Main Page Component ---
 export default function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
+  const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof chargeFormSchema>>({
+    resolver: zodResolver(chargeFormSchema),
+    defaultValues: { scratchedAmount: 0 },
+  });
+  
+  const scratchedAmount = form.watch('scratchedAmount');
+
+  const chargeCalculations = useMemo(() => {
+    if (!selectedClient || !scratchedAmount) {
+      return { grossRevenue: 0, commissionValue: 0, netRevenue: 0 };
+    }
+    const grossRevenue = scratchedAmount * selectedClient.raspinha;
+    const commissionValue = grossRevenue * (selectedClient.comissao / 100);
+    const netRevenue = grossRevenue - commissionValue;
+    return { grossRevenue, commissionValue, netRevenue };
+  }, [selectedClient, scratchedAmount]);
+
+
+  const handleOpenChargeDialog = (client: Client) => {
+    setSelectedClient(client);
+    setIsChargeDialogOpen(true);
+    form.reset();
+  };
+
+  const handleChargeDialogClose = (open: boolean) => {
+    if (!open) {
+      setSelectedClient(null);
+    }
+    setIsChargeDialogOpen(open);
+  }
+
+  const onChargeSubmit = (values: z.infer<typeof chargeFormSchema>) => {
+    setIsSubmittingCharge(true);
+    
+    // In a real app, you'd save this to a database.
+    // For now, we just simulate with a toast message.
+    console.log({
+        clientId: selectedClient?.id,
+        ...values,
+        ...chargeCalculations
+    });
+
+    setTimeout(() => {
+      toast({
+        title: 'Cobrança Salva!',
+        description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
+      });
+      setIsSubmittingCharge(false);
+      handleChargeDialogClose(false);
+    }, 1000);
+  };
 
   const filteredClients = useMemo(() => {
     if (!searchTerm) return mockClients;
@@ -143,7 +217,7 @@ export default function ClientesPage() {
                     <h2 className="text-xl font-semibold border-b border-border pb-2">{city}</h2>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {clients.map(client => (
-                            <ClientCard key={client.id} client={client} />
+                            <ClientCard key={client.id} client={client} onChargeClick={handleOpenChargeDialog} />
                         ))}
                     </div>
                 </div>
@@ -154,6 +228,59 @@ export default function ClientesPage() {
                 </div>
             )}
         </div>
+        <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Nova Cobrança para {selectedClient?.name}</DialogTitle>
+                    <DialogDescription>
+                    Insira a quantidade de raspadinhas vendidas para calcular e salvar a cobrança.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="scratchedAmount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Quantidade de Raspadinhas Vendidas</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="Ex: 100" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        
+                        {scratchedAmount > 0 && selectedClient && (
+                            <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
+                                <h4 className="font-semibold text-center">Resumo da Cobrança</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Bruto ({scratchedAmount} x {formatCurrency(selectedClient.raspinha)})</span>
+                                        <span>{formatCurrency(chargeCalculations.grossRevenue)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Comissão do Cliente ({selectedClient.comissao}%)</span>
+                                        <span className="text-destructive">-{formatCurrency(chargeCalculations.commissionValue)}</span>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className="flex justify-between items-center text-base font-bold">
+                                    <span>Valor Líquido (para a empresa)</span>
+                                    <span className="text-primary">{formatCurrency(chargeCalculations.netRevenue)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full">
+                            {isSubmittingCharge && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar Cobrança
+                        </Button>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }

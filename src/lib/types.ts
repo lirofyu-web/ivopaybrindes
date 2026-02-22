@@ -20,3 +20,16 @@ export type Prize = {
   imageUrl: string;
   quantity: number;
 };
+
+export type Cobranca = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  createdAt: Date;
+  scratchedAmount: number;
+  scratchPrice: number;
+  commissionPercentage: number;
+  grossRevenue: number;
+  commissionValue: number;
+  netRevenue: number;
+};
