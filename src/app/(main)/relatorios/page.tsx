@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Printer, Filter, Calendar as CalendarIcon, Package, Layers, Gift, Archive } from "lucide-react";
+import { BarChart, Printer, Filter, Calendar as CalendarIcon, Package, Layers, Gift, Archive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,51 +11,27 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import { mockCobrancas } from '@/lib/mock-cobrancas';
-import { mockPrizes } from '@/lib/mock-prizes';
-import type { Route, Cobranca } from '@/lib/types';
-import { mockRoutes } from '@/lib/mock-routes';
+import type { Route, Cobranca, Prize } from '@/lib/types';
+import { useCollection } from '@/firebase';
 
 export default function RelatoriosPage() {
-    const [cobrancas, setCobrancas] = useState<Cobranca[]>([]);
+    const { data: cobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
+    const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
+    const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
+
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
-    const [routes, setRoutes] = useState<Route[]>([]);
 
-    useEffect(() => {
-        try {
-            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-            if (storedRoutesRaw) {
-                setRoutes(JSON.parse(storedRoutesRaw));
-            } else {
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-                setRoutes(mockRoutes);
-            }
-            
-            const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
-            if (storedCobrancasRaw) {
-                const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
-                    ...c,
-                    createdAt: new Date(c.createdAt),
-                }));
-                setCobrancas(parsedCobrancas);
-            } else {
-                localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
-                setCobrancas(mockCobrancas);
-            }
-        } catch (error) {
-            console.error("Failed to read data from localStorage", error);
-            setRoutes(mockRoutes);
-            setCobrancas(mockCobrancas);
-        }
-    }, []);
+    const isLoading = isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes;
 
     const routeOptions = useMemo(() => {
+        if (!routes) return ['all'];
         return ['all', ...routes.map(r => r.name).sort()];
     }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
-        const sorted = [...cobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (!cobrancas) return [];
+        const sorted = [...cobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         
         return sorted.filter(c => {
             const routeMatch = selectedRoute === 'all' || c.route === selectedRoute;
@@ -64,12 +40,12 @@ export default function RelatoriosPage() {
             if (date?.from) {
                 const fromDate = new Date(date.from);
                 fromDate.setHours(0, 0, 0, 0);
-                dateMatch = new Date(c.createdAt) >= fromDate;
+                dateMatch = c.createdAt >= fromDate;
             }
             if (date?.to) {
                 const toDate = new Date(date.to);
                 toDate.setHours(23, 59, 59, 999);
-                dateMatch = dateMatch && new Date(c.createdAt) <= toDate;
+                dateMatch = dateMatch && c.createdAt <= toDate;
             }
             
             return routeMatch && dateMatch;
@@ -145,6 +121,15 @@ export default function RelatoriosPage() {
             printWindow.print();
         }, 500);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
 
     return (
     <div className="space-y-6">
@@ -257,7 +242,7 @@ export default function RelatoriosPage() {
                         <CardDescription>Visão geral do estoque atual.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {mockPrizes.length > 0 ? (
+                        {prizes && prizes.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -266,7 +251,7 @@ export default function RelatoriosPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockPrizes.map(prize => (
+                                    {prizes.map(prize => (
                                         <TableRow key={prize.id}>
                                             <TableCell>{prize.name}</TableCell>
                                             <TableCell className="text-right">{prize.quantity}</TableCell>

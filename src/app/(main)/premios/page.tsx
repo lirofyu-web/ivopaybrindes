@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { mockPrizes } from '@/lib/mock-prizes';
 import type { Prize } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,11 +15,14 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
+import { useCollection, useFirestore } from '@/firebase';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 // --- Add Prize Form Schema ---
 const prizeFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome do prêmio deve ter pelo menos 3 caracteres.' }),
   quantity: z.coerce.number().min(0, { message: 'A quantidade não pode ser negativa.' }),
+  imageUrl: z.string().url({ message: 'Por favor, insira uma URL de imagem válida.' }),
 });
 
 // --- Prize Card Component ---
@@ -29,7 +31,7 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
         <Card className="overflow-hidden flex flex-col">
             <div className="relative aspect-video w-full">
                 <Image
-                    src={prize.imageUrl}
+                    src={prize.imageUrl || 'https://placehold.co/400x300/27272a/71717a?text=Sem+Imagem'}
                     alt={prize.name}
                     fill
                     className="object-cover"
@@ -47,7 +49,7 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                 </Button>
-                <Button variant="destructive" size="icon" onClick={() => onDelete(prize.id)}>
+                <Button variant="destructive" size="icon" onClick={() => onDelete(prize.id!)}>
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Deletar</span>
                 </Button>
@@ -58,26 +60,22 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
 
 // --- Main Page Component ---
 export default function PremiosPage() {
-    const [prizes, setPrizes] = useState<Prize[]>(mockPrizes);
+    const firestore = useFirestore();
+    const { data: prizes, isLoading } = useCollection<Prize>('premios');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof prizeFormSchema>>({
         resolver: zodResolver(prizeFormSchema),
-        defaultValues: { name: '', quantity: 0 },
+        defaultValues: { name: '', quantity: 0, imageUrl: '' },
     });
 
     const handleDialogOpen = (open: boolean) => {
         if (!open) {
-            // Reset form on close
-            form.reset({ name: '', quantity: 0 });
+            form.reset({ name: '', quantity: 0, imageUrl: '' });
             setEditingPrize(null);
-            setImagePreview(null);
-            setImageFile(null);
         }
         setIsDialogOpen(open);
     }
@@ -86,70 +84,59 @@ export default function PremiosPage() {
         setEditingPrize(prize);
         form.setValue('name', prize.name);
         form.setValue('quantity', prize.quantity);
-        setImagePreview(prize.imageUrl);
+        form.setValue('imageUrl', prize.imageUrl);
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (prizeId: string) => {
-        // Here you would typically call an API to delete the prize
-        setPrizes(prizes.filter(p => p.id !== prizeId));
-        toast({
-            title: 'Prêmio Deletado!',
-            description: 'O prêmio foi removido da sua lista.',
-        });
-    };
-
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+    const handleDelete = async (prizeId: string) => {
+        if (!firestore) return;
+        try {
+            await deleteDoc(doc(firestore, 'premios', prizeId));
+            toast({
+                title: 'Prêmio Deletado!',
+                description: 'O prêmio foi removido da sua lista.',
+                variant: 'destructive'
+            });
+        } catch (error) {
+            toast({
+                title: 'Erro!',
+                description: 'Não foi possível deletar o prêmio.',
+                variant: 'destructive'
+            });
+            console.error("Error deleting prize:", error);
         }
     };
     
-    const onSubmit = (values: z.infer<typeof prizeFormSchema>) => {
-        if (!imagePreview) {
-            toast({
-                variant: 'destructive',
-                title: 'Imagem faltando',
-                description: 'Por favor, selecione uma imagem para o prêmio.',
-            });
-            return;
-        }
-
+    const onSubmit = async (values: z.infer<typeof prizeFormSchema>) => {
+        if (!firestore) return;
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => {
+        
+        try {
             if (editingPrize) {
-                // Update existing prize
-                const updatedPrizes = prizes.map(p => p.id === editingPrize.id ? { ...p, name: values.name, quantity: values.quantity, imageUrl: imagePreview } : p);
-                setPrizes(updatedPrizes);
+                const prizeDocRef = doc(firestore, 'premios', editingPrize.id!);
+                await updateDoc(prizeDocRef, values);
                 toast({
                     title: 'Prêmio Atualizado!',
                     description: `O prêmio "${values.name}" foi atualizado com sucesso.`,
                 });
             } else {
-                // Add new prize
-                const newPrize: Prize = {
-                    id: (prizes.length + 1).toString(),
-                    name: values.name,
-                    imageUrl: imagePreview,
-                    quantity: values.quantity,
-                };
-                setPrizes([newPrize, ...prizes]);
+                await addDoc(collection(firestore, 'premios'), values);
                 toast({
                     title: 'Prêmio Adicionado!',
                     description: `O prêmio "${values.name}" foi cadastrado com sucesso.`,
                 });
             }
-            
-            setIsSubmitting(false);
             handleDialogOpen(false);
-        }, 1000);
+        } catch (error) {
+             toast({
+                title: 'Erro!',
+                description: 'Não foi possível salvar o prêmio.',
+                variant: 'destructive'
+            });
+            console.error("Error saving prize:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -204,24 +191,19 @@ export default function PremiosPage() {
                                             </FormItem>
                                         )}
                                     />
-                                    <FormItem>
-                                        <FormLabel>Imagem do Prêmio</FormLabel>
-                                        <FormControl>
-                                             <Input id="picture" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                                        </FormControl>
-                                        <label htmlFor="picture" className={cn("block w-full aspect-video rounded-md border-2 border-dashed border-muted-foreground/30 cursor-pointer", imagePreview ? 'border-solid' : '')}>
-                                            {imagePreview ? (
-                                                <div className="relative w-full h-full">
-                                                    <Image src={imagePreview} alt="Preview do prêmio" fill className="object-contain rounded-md" />
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                                                    <ImageIcon className="h-12 w-12" />
-                                                    <span className="mt-2 text-sm">Clique para selecionar</span>
-                                                </div>
-                                            )}
-                                        </label>
-                                    </FormItem>
+                                    <FormField
+                                        control={form.control}
+                                        name="imageUrl"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>URL da Imagem do Prêmio</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="https://exemplo.com/imagem.png" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                                 <Button type="submit" disabled={isSubmitting} className="w-full">
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -232,17 +214,27 @@ export default function PremiosPage() {
                     </DialogContent>
                 </Dialog>
             </div>
-            
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {prizes.map(prize => (
-                    <PrizeCard key={prize.id} prize={prize} onEdit={handleEdit} onDelete={handleDelete} />
-                ))}
-            </div>
-            {prizes.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground col-span-full">
-                    <p>Nenhum prêmio cadastrado ainda.</p>
+
+            {isLoading ? (
+                 <div className="text-center py-12 text-muted-foreground">
+                    <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+                    <p className="mt-4">Carregando prêmios...</p>
                 </div>
+            ) : (
+                <>
+                    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {prizes?.map(prize => (
+                            <PrizeCard key={prize.id} prize={prize} onEdit={handleEdit} onDelete={handleDelete} />
+                        ))}
+                    </div>
+                    {prizes?.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground col-span-full">
+                            <p>Nenhum prêmio cadastrado ainda.</p>
+                        </div>
+                    )}
+                </>
             )}
+            
         </div>
     );
 }

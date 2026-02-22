@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, PlusCircle, Loader2, Edit, Trash2 } from "lucide-react";
 import type { Route } from '@/lib/types';
-import { mockRoutes } from '@/lib/mock-routes';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
+import { useCollection, useFirestore } from '@/firebase';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 const routeFormSchema = z.object({
   name: z.string().min(3, 'O nome da rota deve ter pelo menos 3 caracteres.'),
@@ -44,30 +45,14 @@ function RouteCard({ route, onEdit, onDelete }: { route: Route; onEdit: (route: 
 }
 
 export default function RotasPage() {
-    const [routes, setRoutes] = useState<Route[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
+    const { data: routes, isLoading } = useCollection<Route>('rotas');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
     const { toast } = useToast();
-
-    useEffect(() => {
-        try {
-            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-            if (storedRoutesRaw) {
-                setRoutes(JSON.parse(storedRoutesRaw));
-            } else {
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-                setRoutes(mockRoutes);
-            }
-        } catch (error) {
-            console.error("Failed to read routes from localStorage", error);
-            setRoutes(mockRoutes);
-        }
-        setIsLoading(false);
-    }, []);
 
     const form = useForm<z.infer<typeof routeFormSchema>>({
         resolver: zodResolver(routeFormSchema),
@@ -94,50 +79,58 @@ export default function RotasPage() {
         setIsDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
-        if (!routeToDelete) return;
+    const handleConfirmDelete = async () => {
+        if (!routeToDelete || !firestore) return;
         
-        const updatedRoutes = routes.filter(r => r.id !== routeToDelete.id);
-        localStorage.setItem('mrd-brindes-routes', JSON.stringify(updatedRoutes));
-        setRoutes(updatedRoutes);
-
-        toast({
-            title: 'Rota Excluída!',
-            description: `A rota "${routeToDelete.name}" foi removida.`,
-            variant: 'destructive'
-        });
+        try {
+            await deleteDoc(doc(firestore, 'rotas', routeToDelete.id!));
+            toast({
+                title: 'Rota Excluída!',
+                description: `A rota "${routeToDelete.name}" foi removida.`,
+                variant: 'destructive'
+            });
+        } catch (error) {
+            console.error("Error deleting route: ", error);
+            toast({
+                title: 'Erro!',
+                description: 'Não foi possível excluir a rota.',
+                variant: 'destructive'
+            });
+        }
         setIsDeleteDialogOpen(false);
         setRouteToDelete(null);
     };
     
-    const onSubmit = (values: z.infer<typeof routeFormSchema>) => {
+    const onSubmit = async (values: z.infer<typeof routeFormSchema>) => {
+        if (!firestore) return;
         setIsSubmitting(true);
-        setTimeout(() => {
+        
+        try {
             if (editingRoute) {
-                const updatedRoutes = routes.map(r => r.id === editingRoute.id ? { ...r, ...values } : r);
-                setRoutes(updatedRoutes);
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(updatedRoutes));
+                const routeDocRef = doc(firestore, 'rotas', editingRoute.id!);
+                await updateDoc(routeDocRef, values);
                 toast({
                     title: 'Rota Atualizada!',
                     description: `A rota "${values.name}" foi atualizada.`,
                 });
             } else {
-                const newRoute: Route = {
-                    id: `route-${Date.now()}`,
-                    ...values
-                };
-                const updatedRoutes = [newRoute, ...routes];
-                setRoutes(updatedRoutes);
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(updatedRoutes));
+                await addDoc(collection(firestore, 'rotas'), values);
                 toast({
                     title: 'Rota Adicionada!',
                     description: `A rota "${values.name}" foi cadastrada.`,
                 });
             }
-            
-            setIsSubmitting(false);
             handleDialogOpen(false);
-        }, 500);
+        } catch(error) {
+            console.error("Error saving route:", error);
+            toast({
+                title: 'Erro!',
+                description: `Não foi possível salvar a rota.`,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     if (isLoading) {
@@ -210,11 +203,11 @@ export default function RotasPage() {
             </div>
             
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {routes.map(route => (
+                {routes?.map(route => (
                     <RouteCard key={route.id} route={route} onEdit={handleEdit} onDelete={handleDeleteRequest} />
                 ))}
             </div>
-            {routes.length === 0 && (
+            {routes?.length === 0 && !isLoading && (
                 <div className="text-center py-12 text-muted-foreground col-span-full">
                     <p>Nenhuma rota cadastrada ainda.</p>
                 </div>

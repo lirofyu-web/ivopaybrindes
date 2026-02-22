@@ -1,12 +1,11 @@
 'use client'
 import Link from 'next/link';
 import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { mockClients } from '@/lib/mock-clients';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -17,14 +16,12 @@ import * as z from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockPrizes } from '@/lib/mock-prizes';
-import { mockCobrancas } from '@/lib/mock-cobrancas';
-import { mockRoutes } from '@/lib/mock-routes';
 import { Badge } from '@/components/ui/badge';
 import { differenceInDays } from 'date-fns';
-import { buttonVariants } from '@/components/ui/button';
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
+import { useCollection, useFirestore } from '@/firebase';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 
 function formatCurrency(value: number) {
@@ -129,9 +126,12 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 
 // --- Main Page Component ---
 export default function ClientesPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [allCobrancas, setAllCobrancas] = useState<Cobranca[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const firestore = useFirestore();
+  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
+  const { data: allCobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
+  const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
+  const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
@@ -139,55 +139,13 @@ export default function ClientesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
-  const [routes, setRoutes] = useState<Route[]>([]);
   
   // State for prizes in the dialog
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
   
-  useEffect(() => {
-    try {
-      const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
-      if (storedClientsRaw) {
-        const parsedClients = JSON.parse(storedClientsRaw).map((c: any) => ({
-          ...c,
-          createdAt: new Date(c.createdAt),
-        }));
-        setClients(parsedClients);
-      } else {
-        localStorage.setItem('mrd-brindes-clients', JSON.stringify(mockClients));
-        setClients(mockClients);
-      }
-
-      const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-      if (storedRoutesRaw) {
-          setRoutes(JSON.parse(storedRoutesRaw));
-      } else {
-          localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-          setRoutes(mockRoutes);
-      }
-
-      const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
-      if (storedCobrancasRaw) {
-        const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
-          ...c,
-          createdAt: new Date(c.createdAt),
-        }));
-        setAllCobrancas(parsedCobrancas);
-      } else {
-        localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
-        setAllCobrancas(mockCobrancas);
-      }
-
-    } catch (error) {
-      console.error("Failed to read data from localStorage", error);
-      setClients(mockClients);
-      setRoutes(mockRoutes);
-      setAllCobrancas(mockCobrancas);
-    }
-    setIsLoading(false);
-  }, []);
+  const isLoading = isLoadingClients || isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes;
 
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
@@ -230,18 +188,24 @@ export default function ClientesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (!clientToDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!clientToDelete || !firestore) return;
     
-    const updatedClients = clients.filter((c) => c.id !== clientToDelete.id);
-    localStorage.setItem('mrd-brindes-clients', JSON.stringify(updatedClients));
-    setClients(updatedClients);
-
-    toast({
-      title: 'Cliente Excluído!',
-      description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
-      variant: 'destructive'
-    });
+    try {
+      await deleteDoc(doc(firestore, 'clients', clientToDelete.id!));
+      toast({
+        title: 'Cliente Excluído!',
+        description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
+        variant: 'destructive'
+      });
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      toast({
+        title: 'Erro!',
+        description: 'Não foi possível excluir o cliente.',
+        variant: 'destructive'
+      });
+    }
     setIsDeleteDialogOpen(false);
     setClientToDelete(null);
   };
@@ -258,7 +222,7 @@ export default function ClientesPage() {
         return;
     }
 
-    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
+    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id!, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
     
     setPrizesForCharge(prev => {
         const existingPrizeIndex = prev.findIndex(p => p.prizeId === newPrizeEntry.prizeId);
@@ -339,13 +303,12 @@ export default function ClientesPage() {
     }, 500);
   };
 
-  const onChargeSubmit = (values: z.infer<typeof chargeFormSchema>) => {
-    if (!selectedClient) return;
+  const onChargeSubmit = async (values: z.infer<typeof chargeFormSchema>) => {
+    if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    const newCharge: Cobranca = {
-        id: `cobranca-${Date.now()}`,
-        clientId: selectedClient.id,
+    const newCharge: Omit<Cobranca, 'id'> = {
+        clientId: selectedClient.id!,
         clientName: selectedClient.name,
         route: selectedClient.route,
         createdAt: new Date(),
@@ -361,22 +324,42 @@ export default function ClientesPage() {
         prizesGiven: prizesForCharge,
     };
     
-    const updatedCobrancas = [newCharge, ...allCobrancas];
-    localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(updatedCobrancas));
-    setAllCobrancas(updatedCobrancas);
+    try {
+      const docRef = await addDoc(collection(firestore, 'cobrancas'), newCharge);
+      
+      // Update prize stock
+      for (const prizeGiven of prizesForCharge) {
+        const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
+        const prizeToUpdate = prizes?.find(p => p.id === prizeGiven.prizeId);
+        if (prizeToUpdate) {
+            await updateDoc(prizeDocRef, {
+                quantity: prizeToUpdate.quantity - prizeGiven.quantity
+            });
+        }
+      }
 
-    toast({
-      title: 'Cobrança Salva!',
-      description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
-    });
-    
-    handlePrintReceipt(newCharge);
+      toast({
+        title: 'Cobrança Salva!',
+        description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
+      });
+      
+      handlePrintReceipt({ ...newCharge, id: docRef.id });
 
-    setIsSubmittingCharge(false);
-    handleChargeDialogClose(false);
+    } catch (error) {
+      console.error("Error saving charge: ", error);
+      toast({
+        title: 'Erro!',
+        description: 'Não foi possível salvar a cobrança.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingCharge(false);
+      handleChargeDialogClose(false);
+    }
   };
 
   const filteredClients = useMemo(() => {
+    if (!clients) return [];
     if (!searchTerm) return clients;
     return clients.filter(client => 
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -386,22 +369,25 @@ export default function ClientesPage() {
 
   const clientVisitStatus = useMemo(() => {
     const statusMap = new Map<string, 'visited' | 'not-visited'>();
+    if (!allCobrancas || !clients) return statusMap;
     const now = new Date();
     
-    const sortedCobrancas = [...allCobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     clients.forEach(client => {
       const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
-      if (lastCharge && differenceInDays(now, new Date(lastCharge.createdAt)) <= 25) {
-        statusMap.set(client.id, 'visited');
+      if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
+        statusMap.set(client.id!, 'visited');
       } else {
-        statusMap.set(client.id, 'not-visited');
+        statusMap.set(client.id!, 'not-visited');
       }
     });
     return statusMap;
   }, [allCobrancas, clients]);
 
   const clientsByRoute = useMemo(() => {
+    if (!filteredClients || !routes) return {};
+
     const routeDescriptionMap = new Map<string, string>();
     routes.forEach(r => routeDescriptionMap.set(r.name, r.description));
 
@@ -472,26 +458,26 @@ export default function ClientesPage() {
         </div>
 
         <div className="space-y-8">
-            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients }]) => (
+            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients: routeClients }]) => (
                 <div key={routeName} className="space-y-4">
                     <h2 className="text-xl font-semibold border-b border-border pb-2">
                         {routeName}
                         {description && <span className="text-sm font-normal text-muted-foreground ml-2">- {description}</span>}
                     </h2>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {clients.map(client => (
+                        {routeClients.map(client => (
                             <ClientCard 
                                 key={client.id} 
                                 client={client} 
                                 onChargeClick={handleOpenChargeDialog}
                                 onDeleteClick={handleDeleteRequest}
-                                visitStatus={clientVisitStatus.get(client.id) || 'not-visited'}
+                                visitStatus={clientVisitStatus.get(client.id!) || 'not-visited'}
                              />
                         ))}
                     </div>
                 </div>
             ))}
-            {filteredClients.length === 0 && (
+            {filteredClients.length === 0 && !isLoading && (
                 <div className="text-center py-12 text-muted-foreground">
                     <p>Nenhum cliente encontrado.</p>
                 </div>
@@ -611,15 +597,15 @@ export default function ClientesPage() {
                             <div className="flex gap-2 items-end">
                                 <FormItem className="flex-1">
                                     <FormLabel>Prêmio</FormLabel>
-                                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(mockPrizes.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
+                                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Selecione um prêmio" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {mockPrizes.filter(p => p.quantity > 0).map(prize => (
-                                                <SelectItem key={prize.id} value={prize.id}>
+                                            {prizes?.filter(p => p.quantity > 0).map(prize => (
+                                                <SelectItem key={prize.id} value={prize.id!}>
                                                     <div className="flex justify-between w-full">
                                                         <span>{prize.name}</span>
                                                         <span className="text-muted-foreground text-xs">Estoque: {prize.quantity}</span>

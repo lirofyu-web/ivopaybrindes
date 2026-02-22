@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,10 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingDown, PlusCircle, Loader2, Filter, Printer, Calendar as CalendarIcon, Trash2 } from "lucide-react";
 import type { Despesa, Route } from '@/lib/types';
-import { mockDespesas } from '@/lib/mock-despesas';
-import { mockRoutes } from '@/lib/mock-routes';
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useCollection, useFirestore } from '@/firebase';
+import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
 
 // --- Form Schema ---
 const despesaFormSchema = z.object({
@@ -40,8 +40,10 @@ function formatDate(date: Date) {
 }
 
 export default function DespesasPage() {
-    const [despesas, setDespesas] = useState<Despesa[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
+    const { data: despesas, isLoading: isLoadingDespesas } = useCollection<Despesa>('despesas');
+    const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
@@ -49,43 +51,15 @@ export default function DespesasPage() {
     // Filters
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
-    const [routes, setRoutes] = useState<Route[]>([]);
 
     // Delete dialog
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [despesaToDelete, setDespesaToDelete] = useState<Despesa | null>(null);
 
-    // Load data from localStorage
-    useEffect(() => {
-        try {
-            const storedDespesasRaw = localStorage.getItem('mrd-brindes-despesas');
-            if (storedDespesasRaw) {
-                const parsedDespesas = JSON.parse(storedDespesasRaw).map((d: any) => ({
-                    ...d,
-                    createdAt: new Date(d.createdAt),
-                }));
-                setDespesas(parsedDespesas);
-            } else {
-                localStorage.setItem('mrd-brindes-despesas', JSON.stringify(mockDespesas));
-                setDespesas(mockDespesas);
-            }
-
-            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-            if (storedRoutesRaw) {
-                setRoutes(JSON.parse(storedRoutesRaw));
-            } else {
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-                setRoutes(mockRoutes);
-            }
-        } catch (error) {
-            console.error("Failed to read data from localStorage", error);
-            setDespesas(mockDespesas);
-            setRoutes(mockRoutes);
-        }
-        setIsLoading(false);
-    }, []);
+    const isLoading = isLoadingDespesas || isLoadingRoutes;
 
     const routeOptions = useMemo(() => {
+        if (!routes) return ['all'];
         return ['all', ...routes.map(r => r.name).sort()];
     }, [routes]);
 
@@ -96,6 +70,7 @@ export default function DespesasPage() {
     });
 
     const filteredDespesas = useMemo(() => {
+        if (!despesas) return [];
         const sorted = [...despesas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         
         return sorted.filter(d => {
@@ -158,28 +133,33 @@ export default function DespesasPage() {
         }, 500);
     };
 
-    const onSubmit = (values: z.infer<typeof despesaFormSchema>) => {
+    const onSubmit = async (values: z.infer<typeof despesaFormSchema>) => {
+        if (!firestore) return;
         setIsSubmitting(true);
 
-        const newDespesa: Despesa = {
-            id: `despesa-${Date.now()}`,
+        const newDespesa: Omit<Despesa, 'id'> = {
             createdAt: new Date(),
             ...values
         };
 
-        const updatedDespesas = [newDespesa, ...despesas];
-        setDespesas(updatedDespesas);
-        localStorage.setItem('mrd-brindes-despesas', JSON.stringify(updatedDespesas));
-
-        setTimeout(() => {
+        try {
+            await addDoc(collection(firestore, 'despesas'), newDespesa);
             toast({
                 title: 'Despesa Adicionada!',
                 description: `A despesa "${values.description}" foi registrada.`,
             });
-            setIsSubmitting(false);
             setIsDialogOpen(false);
             form.reset();
-        }, 500);
+        } catch (error) {
+            console.error("Error adding expense:", error);
+            toast({
+                title: 'Erro!',
+                description: 'Não foi possível adicionar a despesa.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     const handleDeleteRequest = (despesa: Despesa) => {
@@ -187,18 +167,25 @@ export default function DespesasPage() {
         setIsDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
-        if (!despesaToDelete) return;
+    const handleConfirmDelete = async () => {
+        if (!despesaToDelete || !firestore) return;
         
-        const updatedDespesas = despesas.filter((d) => d.id !== despesaToDelete.id);
-        localStorage.setItem('mrd-brindes-despesas', JSON.stringify(updatedDespesas));
-        setDespesas(updatedDespesas);
-
-        toast({
-            title: 'Despesa Excluída!',
-            description: `A despesa "${despesaToDelete.description}" foi removida.`,
-            variant: 'destructive'
-        });
+        try {
+            await deleteDoc(doc(firestore, 'despesas', despesaToDelete.id!));
+            toast({
+                title: 'Despesa Excluída!',
+                description: `A despesa "${despesaToDelete.description}" foi removida.`,
+                variant: 'destructive'
+            });
+        } catch (error) {
+            console.error("Error deleting expense:", error);
+            toast({
+                title: 'Erro!',
+                description: 'Não foi possível excluir a despesa.',
+                variant: 'destructive'
+            });
+        }
+        
         setIsDeleteDialogOpen(false);
         setDespesaToDelete(null);
     };
@@ -266,7 +253,7 @@ export default function DespesasPage() {
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
                                             <SelectContent>
-                                                {routes.map(route => (<SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>))}
+                                                {routes?.map(route => (<SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>))}
                                             </SelectContent>
                                             </Select>
                                             <FormMessage />

@@ -2,8 +2,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2 } from "lucide-react";
-import { mockCobrancas } from '@/lib/mock-cobrancas';
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -12,11 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { Route, Cobranca } from "@/lib/types";
-import { mockRoutes } from "@/lib/mock-routes";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
+import { useCollection, useFirestore } from '@/firebase';
+import { deleteDoc, doc } from "firebase/firestore";
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -27,54 +27,27 @@ function formatDate(date: Date) {
 }
 
 export default function CobrancaPage() {
-    const [cobrancas, setCobrancas] = useState<Cobranca[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
+    const { data: cobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
+    const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
-    const [routes, setRoutes] = useState<Route[]>([]);
     const { toast } = useToast();
 
     // Delete dialog state
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [cobrancaToDelete, setCobrancaToDelete] = useState<Cobranca | null>(null);
 
-    // Load data from localStorage
-    useEffect(() => {
-        try {
-            const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-            if (storedRoutesRaw) {
-                setRoutes(JSON.parse(storedRoutesRaw));
-            } else {
-                localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-                setRoutes(mockRoutes);
-            }
-
-            const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
-            if (storedCobrancasRaw) {
-                 const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
-                    ...c,
-                    createdAt: new Date(c.createdAt),
-                }));
-                setCobrancas(parsedCobrancas);
-            } else {
-                localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
-                setCobrancas(mockCobrancas);
-            }
-
-        } catch (error) {
-            console.error("Failed to read data from localStorage", error);
-            setRoutes(mockRoutes);
-            setCobrancas(mockCobrancas);
-        }
-        setIsLoading(false);
-    }, []);
+    const isLoading = isLoadingCobrancas || isLoadingRoutes;
 
     const routeOptions = useMemo(() => {
+        if (!routes) return ['all'];
         return ['all', ...routes.map(r => r.name).sort()];
     }, [routes]);
 
     const filteredCobrancas = useMemo(() => {
-        const sorted = [...cobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (!cobrancas) return [];
+        const sorted = [...cobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         
         return sorted.filter(c => {
             const routeMatch = selectedRoute === 'all' || c.route === selectedRoute;
@@ -83,12 +56,12 @@ export default function CobrancaPage() {
             if (date?.from) {
                 const fromDate = new Date(date.from);
                 fromDate.setHours(0, 0, 0, 0);
-                dateMatch = new Date(c.createdAt) >= fromDate;
+                dateMatch = c.createdAt >= fromDate;
             }
             if (date?.to) {
                 const toDate = new Date(date.to);
                 toDate.setHours(23, 59, 59, 999);
-                dateMatch = dateMatch && new Date(c.createdAt) <= toDate;
+                dateMatch = dateMatch && c.createdAt <= toDate;
             }
             
             return routeMatch && dateMatch;
@@ -212,18 +185,25 @@ export default function CobrancaPage() {
         setIsDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
-        if (!cobrancaToDelete) return;
+    const handleConfirmDelete = async () => {
+        if (!cobrancaToDelete || !firestore) return;
         
-        const updatedCobrancas = cobrancas.filter((c) => c.id !== cobrancaToDelete.id);
-        localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(updatedCobrancas));
-        setCobrancas(updatedCobrancas);
+        try {
+            await deleteDoc(doc(firestore, 'cobrancas', cobrancaToDelete.id!));
+            toast({
+                title: 'Cobrança Excluída!',
+                description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`,
+                variant: 'destructive'
+            });
+        } catch (error) {
+            console.error("Error deleting charge:", error);
+            toast({
+                title: 'Erro!',
+                description: `Não foi possível excluir a cobrança.`,
+                variant: 'destructive'
+            });
+        }
 
-        toast({
-            title: 'Cobrança Excluída!',
-            description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`,
-            variant: 'destructive'
-        });
         setIsDeleteDialogOpen(false);
         setCobrancaToDelete(null);
     };
@@ -342,7 +322,7 @@ export default function CobrancaPage() {
                                     <TableRow key={cobranca.id}>
                                         <TableCell className="font-medium">{cobranca.clientName}</TableCell>
                                         <TableCell className="text-muted-foreground">{cobranca.route}</TableCell>
-                                        <TableCell className="text-center text-muted-foreground">{formatDate(new Date(cobranca.createdAt))}</TableCell>
+                                        <TableCell className="text-center text-muted-foreground">{formatDate(cobranca.createdAt)}</TableCell>
                                         <TableCell className="print:hidden">
                                             <div className="flex flex-col text-xs text-muted-foreground">
                                                 {cobranca.kitStatus && <span>Kit: <span className="font-medium text-foreground">{cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></span>}

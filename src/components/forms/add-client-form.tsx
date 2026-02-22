@@ -18,11 +18,11 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Globe, Loader2, X } from 'lucide-react';
 import type { Prize, Client, Route } from '@/lib/types';
-import { mockPrizes } from '@/lib/mock-prizes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { mockRoutes } from '@/lib/mock-routes';
+import { useCollection, useFirestore } from '@/firebase';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
@@ -42,8 +42,12 @@ const formSchema = z.object({
   })).optional(),
 });
 
-export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }) {
+export function AddClientForm({ client }: { client?: Client }) {
   const router = useRouter();
+  const firestore = useFirestore();
+  const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
+  const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationStatus, setLocationStatus] = useState('Salvar localização atual');
   const [isLocating, setIsLocating] = useState(false);
@@ -51,7 +55,6 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
   const [initialPrizes, setInitialPrizes] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
-  const [routes, setRoutes] = useState<Route[]>([]);
   
   const isEditing = !!client;
 
@@ -70,7 +73,8 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
       route: '',
       raspinha: 2.0,
       comissao: 25,
-      prizes: []
+      prizes: [],
+      status: 'active'
     },
   });
 
@@ -82,58 +86,35 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
         setInitialPrizes(client.prizes);
         form.setValue('prizes', client.prizes);
     }
-     try {
-      const storedRoutesRaw = localStorage.getItem('mrd-brindes-routes');
-      if (storedRoutesRaw) {
-          setRoutes(JSON.parse(storedRoutesRaw));
-      } else {
-          localStorage.setItem('mrd-brindes-routes', JSON.stringify(mockRoutes));
-          setRoutes(mockRoutes);
-      }
-    } catch(e) {
-      console.error("Failed to load routes", e);
-      setRoutes(mockRoutes);
-    }
   }, [client, isEditing, form]);
 
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore) return;
     setIsSubmitting(true);
+
+    const clientData = {
+      ...values,
+      createdAt: client?.createdAt || new Date(), // Keep original createdAt on edit
+      updatedAt: new Date(),
+    };
     
-    setTimeout(() => {
-      try {
-        const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
-        const storedClients: Client[] = storedClientsRaw ? JSON.parse(storedClientsRaw).map((c: any) => ({...c, createdAt: new Date(c.createdAt)})) : [];
-        
-        let updatedClients: Client[];
-
-        if (isEditing && client) {
-            updatedClients = storedClients.map(c => c.id === client.id ? { ...c, ...values } : c);
-            toast({
-              title: 'Sucesso!',
-              description: `Cliente "${values.name}" atualizado.`,
-            });
-        } else {
-            const newClient: Client = {
-                id: `client-${Date.now()}`,
-                status: 'active',
-                createdAt: new Date(),
-                ...values,
-            };
-            updatedClients = [newClient, ...storedClients];
-            toast({
-              title: 'Sucesso!',
-              description: `Cliente "${values.name}" adicionado.`,
-            });
-        }
-
-        localStorage.setItem('mrd-brindes-clients', JSON.stringify(updatedClients));
-
-        setIsSubmitting(false);
-        if (isEditing) {
+    try {
+      if (isEditing && client?.id) {
+          const clientDocRef = doc(firestore, 'clients', client.id);
+          await updateDoc(clientDocRef, clientData);
+          toast({
+            title: 'Sucesso!',
+            description: `Cliente "${values.name}" atualizado.`,
+          });
           router.push('/clientes');
           router.refresh();
-        } else {
+      } else {
+          await addDoc(collection(firestore, 'clients'), { ...clientData, status: 'active' });
+          toast({
+            title: 'Sucesso!',
+            description: `Cliente "${values.name}" adicionado.`,
+          });
           form.reset({
             name: '',
             phone: '',
@@ -148,17 +129,17 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           setInitialPrizes([]);
           setSelectedPrizeForAdd(null);
           setPrizeQuantity(1);
-        }
-      } catch (error) {
-        console.error("Failed to save to localStorage", error);
-        toast({
-          title: 'Erro!',
-          description: 'Não foi possível salvar os dados do cliente.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to save client:", error);
+      toast({
+        title: 'Erro!',
+        description: 'Não foi possível salvar os dados do cliente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
   
   const handleLocation = () => {
@@ -238,7 +219,7 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
         return;
     }
 
-    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
+    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id!, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
     
     setInitialPrizes(prev => {
         const existingPrizeIndex = prev.findIndex(p => p.prizeId === newPrizeEntry.prizeId);
@@ -263,6 +244,16 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
       form.setValue('prizes', updatedPrizes);
   };
 
+  const isLoading = isLoadingRoutes || isLoadingPrizes;
+
+  if (isLoading) {
+    return (
+       <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando dados...</span>
+        </div>
+    )
+  }
 
   return (
     <Form {...form}>
@@ -335,7 +326,7 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        {routes.map(route => (
+                        {routes?.map(route => (
                             <SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>
                         ))}
                     </SelectContent>
@@ -403,15 +394,15 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
             <div className="flex gap-2 items-end">
                 <FormItem className="flex-1">
                     <FormLabel>Adicionar Prêmio</FormLabel>
-                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(mockPrizes.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
+                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
                         <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione um prêmio" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {mockPrizes.map(prize => (
-                                <SelectItem key={prize.id} value={prize.id}>
+                            {prizes?.map(prize => (
+                                <SelectItem key={prize.id} value={prize.id!}>
                                      <div className="flex justify-between w-full">
                                         <span>{prize.name}</span>
                                         <span className="text-muted-foreground text-xs">Estoque: {prize.quantity}</span>

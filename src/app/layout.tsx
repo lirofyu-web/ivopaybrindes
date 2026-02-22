@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
+import FirebaseErrorListener from '@/components/firebase-error-listener';
 
 export const metadata: Metadata = {
   title: 'MRD Brindes',
@@ -35,7 +37,10 @@ export default function RootLayout({
           defaultTheme="dark"
           storageKey="mrd-brindes-theme"
         >
-          {children}
+          <FirebaseClientProvider>
+            <FirebaseErrorListener />
+            {children}
+          </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
       </body>

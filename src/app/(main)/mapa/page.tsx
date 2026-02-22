@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Client, Cobranca } from '@/lib/types';
-import { mockClients } from '@/lib/mock-clients';
-import { mockCobrancas } from '@/lib/mock-cobrancas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Map as MapIcon, Search, Maximize, Minimize } from 'lucide-react';
@@ -12,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { differenceInDays } from 'date-fns';
+import { useCollection } from '@/firebase';
 
 // Dynamically import the map component to avoid SSR issues with Leaflet
 const ClientMap = dynamic(() => import('@/components/map/client-map'), {
@@ -20,48 +19,16 @@ const ClientMap = dynamic(() => import('@/components/map/client-map'), {
 });
 
 export default function MapaPage() {
-    const [clients, setClients] = useState<Client[]>([]);
-    const [allCobrancas, setAllCobrancas] = useState<Cobranca[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
+    const { data: allCobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'default' | 'list-full' | 'map-full'>('default');
 
-    useEffect(() => {
-        try {
-            const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
-            if (storedClientsRaw) {
-                const parsedClients = JSON.parse(storedClientsRaw).map((c: any) => ({
-                    ...c,
-                    createdAt: new Date(c.createdAt),
-                }));
-                setClients(parsedClients);
-            } else {
-                localStorage.setItem('mrd-brindes-clients', JSON.stringify(mockClients));
-                setClients(mockClients);
-            }
-            
-            const storedCobrancasRaw = localStorage.getItem('mrd-brindes-cobrancas');
-            if (storedCobrancasRaw) {
-                const parsedCobrancas = JSON.parse(storedCobrancasRaw).map((c: any) => ({
-                    ...c,
-                    createdAt: new Date(c.createdAt),
-                }));
-                setAllCobrancas(parsedCobrancas);
-            } else {
-                localStorage.setItem('mrd-brindes-cobrancas', JSON.stringify(mockCobrancas));
-                setAllCobrancas(mockCobrancas);
-            }
-
-        } catch (error) {
-            console.error("Failed to read data from localStorage", error);
-            setClients(mockClients);
-            setAllCobrancas(mockCobrancas);
-        }
-        setIsLoading(false);
-    }, []);
+    const isLoading = isLoadingClients || isLoadingCobrancas;
 
     const clientsWithLocation = useMemo(() => {
+        if (!clients) return [];
         const filtered = clients.filter(client => client.location);
         if (!searchTerm) {
             return filtered;
@@ -74,16 +41,17 @@ export default function MapaPage() {
 
     const clientVisitStatus = useMemo(() => {
         const statusMap = new Map<string, 'visited' | 'not-visited'>();
-        const now = new Date();
+        if (!clients || !allCobrancas) return statusMap;
         
-        const sortedCobrancas = [...allCobrancas].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const now = new Date();
+        const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         clients.forEach(client => {
           const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
-          if (lastCharge && differenceInDays(now, new Date(lastCharge.createdAt)) <= 25) {
-            statusMap.set(client.id, 'visited');
+          if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
+            statusMap.set(client.id!, 'visited');
           } else {
-            statusMap.set(client.id, 'not-visited');
+            statusMap.set(client.id!, 'not-visited');
           }
         });
         return statusMap;
