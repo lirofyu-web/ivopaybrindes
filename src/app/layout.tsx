@@ -8,7 +8,6 @@ import FirebaseErrorListener from '@/components/firebase-error-listener';
 export const metadata: Metadata = {
   title: 'MRD Brindes',
   description: 'Gerenciamento e cobranças de raspinhas da sorte',
-  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

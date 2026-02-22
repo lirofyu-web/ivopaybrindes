@@ -21,7 +21,7 @@ import { differenceInDays } from 'date-fns';
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
-import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -174,33 +174,39 @@ export default function ClientesPage() {
     }, []);
 
     useEffect(() => {
-        if (isCameraOpen) {
+        let stream: MediaStream | null = null;
         const getCameraPermission = async () => {
-            try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-            setHasCameraPermission(true);
-            } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            toast({
-                variant: 'destructive',
-                title: 'Acesso à Câmera Negado',
-                description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
-            });
+            if (isCameraOpen) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                    setHasCameraPermission(true);
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    setHasCameraPermission(false);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Acesso à Câmera Negado',
+                        description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
+                    });
+                    setIsCameraOpen(false); // Close camera view if permission is denied
+                }
             }
         };
         getCameraPermission();
-        } else {
-            // Stop camera stream when not open
-            if (videoRef.current && videoRef.current.srcObject) {
-                const stream = videoRef.current.srcObject as MediaStream;
+
+        return () => {
+            if (stream) {
                 stream.getTracks().forEach(track => track.stop());
+            }
+             if (videoRef.current && videoRef.current.srcObject) {
+                const mediaStream = videoRef.current.srcObject as MediaStream;
+                mediaStream.getTracks().forEach(track => track.stop());
                 videoRef.current.srcObject = null;
             }
-        }
+        };
     }, [isCameraOpen, toast]);
 
   const chargeCalculations = useMemo(() => {
@@ -266,11 +272,13 @@ export default function ClientesPage() {
   const handleAddPrizeToCharge = () => {
     if (!selectedPrizeForAdd || prizeQuantity <= 0) return;
     
-    if (prizeQuantity > selectedPrizeForAdd.quantity) {
+    const availableStock = prizes?.find(p => p.id === selectedPrizeForAdd.id)?.quantity ?? 0;
+
+    if (prizeQuantity > availableStock) {
         toast({
             variant: 'destructive',
             title: 'Estoque Insuficiente',
-            description: `Só existem ${selectedPrizeForAdd.quantity} unidades de ${selectedPrizeForAdd.name} em estoque.`
+            description: `Só existem ${availableStock} unidades de ${selectedPrizeForAdd.name} em estoque.`
         });
         return;
     }
@@ -411,15 +419,12 @@ export default function ClientesPage() {
     try {
       const docRef = await addDoc(collection(firestore, 'cobrancas'), newCharge);
       
-      // Update prize stock
+      // Atomically update prize stock
       for (const prizeGiven of prizesForCharge) {
         const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
-        const prizeToUpdate = prizes?.find(p => p.id === prizeGiven.prizeId);
-        if (prizeToUpdate) {
-            await updateDoc(prizeDocRef, {
-                quantity: prizeToUpdate.quantity - prizeGiven.quantity
-            });
-        }
+        await updateDoc(prizeDocRef, {
+            quantity: increment(-prizeGiven.quantity)
+        });
       }
 
       toast({
