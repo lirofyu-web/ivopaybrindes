@@ -313,12 +313,12 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           name="route"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Rota / Região de Cobrança</FormLabel>
+              <FormLabel>Rota</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Goiânia - Setor Sul" {...field} />
+                <Input placeholder="Ex: Rota 1" {...field} />
               </FormControl>
               <FormDescription>
-                Esta região será usada para agrupar clientes e facilitar os acertos e relatórios.
+                Use um nome para a rota (ex: Rota 1, Rota 2) para agrupar clientes.
               </FormDescription>
               <FormMessage />
             </FormItem>
