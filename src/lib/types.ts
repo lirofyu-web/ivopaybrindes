@@ -13,3 +13,9 @@ export type Client = {
   raspinha: number;
   comissao: number;
 };
+
+export type Prize = {
+  id: string;
+  name: string;
+  imageUrl: string;
+};
