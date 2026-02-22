@@ -2,8 +2,7 @@ export type Client = {
   id: string;
   name: string;
   phone: string;
-  addressLine1: string;
-  addressLine2?: string;
+  address: string;
   city: string;
   location?: {
     lat: number;
