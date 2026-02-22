@@ -39,7 +39,7 @@ export default function AppSidebar() {
 
   return (
     <Sidebar
-      className="border-r bg-sidebar"
+      className="border-r bg-sidebar print:hidden"
       collapsible={isMobile ? 'offcanvas' : 'icon'}
     >
       <SidebarHeader className="p-4">
