@@ -51,6 +51,8 @@ export type Cobranca = BaseType & {
   discount?: number;
   kitStatus?: 'manteve' | 'novo';
   cartelaStatus?: 'manteve' | 'nova';
+  frontCardImageUrl?: string;
+  backCardImageUrl?: string;
   prizesGiven?: {
       prizeId: string;
       prizeName: string;

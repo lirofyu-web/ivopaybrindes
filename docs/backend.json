@@ -65,6 +65,8 @@
         "discount": { "type": "number" },
         "kitStatus": { "type": "string", "enum": ["manteve", "novo"] },
         "cartelaStatus": { "type": "string", "enum": ["manteve", "nova"] },
+        "frontCardImageUrl": { "type": "string" },
+        "backCardImageUrl": { "type": "string" },
         "prizesGiven": {
           "type": "array",
           "items": {

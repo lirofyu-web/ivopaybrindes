@@ -1,7 +1,7 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2 } from "lucide-react";
+import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2, Camera } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DateRange } from "react-day-picker";
@@ -17,6 +17,8 @@ import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
 import { deleteDoc, doc } from "firebase/firestore";
+import Image from 'next/image';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -37,6 +39,9 @@ export default function CobrancaPage() {
     // Delete dialog state
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [cobrancaToDelete, setCobrancaToDelete] = useState<Cobranca | null>(null);
+
+    // Image preview state
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const isLoading = isLoadingCobrancas || isLoadingRoutes;
 
@@ -307,6 +312,7 @@ export default function CobrancaPage() {
                             <TableHead className="text-center">Data</TableHead>
                             <TableHead className="print:hidden">Status</TableHead>
                             <TableHead className="print:hidden">Prêmios</TableHead>
+                            <TableHead className="print:hidden actions-col">Fotos</TableHead>
                             <TableHead className="text-right">Qtd. Rasp.</TableHead>
                             <TableHead className="text-right">Total Bruto</TableHead>
                             <TableHead className="text-right">Comissão</TableHead>
@@ -338,6 +344,22 @@ export default function CobrancaPage() {
                                                 <span className="text-xs text-muted-foreground">Nenhum</span>
                                             )}
                                         </TableCell>
+                                        <TableCell className="print:hidden actions-col">
+                                            <div className="flex items-center gap-1">
+                                                {cobranca.frontCardImageUrl && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(cobranca.frontCardImageUrl!)}>
+                                                        <Camera className="h-4 w-4" />
+                                                        <span className="sr-only">Ver Foto da Frente</span>
+                                                    </Button>
+                                                )}
+                                                {cobranca.backCardImageUrl && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(cobranca.backCardImageUrl!)}>
+                                                        <Camera className="h-4 w-4 text-accent" />
+                                                        <span className="sr-only">Ver Foto do Verso</span>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-right">{cobranca.scratchedAmount}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(cobranca.grossRevenue)}</TableCell>
                                         <TableCell className="text-right text-destructive">-{formatCurrency(cobranca.commissionValue)}</TableCell>
@@ -359,7 +381,7 @@ export default function CobrancaPage() {
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={11} className="h-24 text-center">
+                                <TableCell colSpan={12} className="h-24 text-center">
                                     Nenhuma cobrança registrada para os filtros selecionados.
                                 </TableCell>
                             </TableRow>
@@ -368,7 +390,7 @@ export default function CobrancaPage() {
                     {filteredCobrancas.length > 0 && (
                         <TableFooter className="font-semibold border-t">
                             <TableRow>
-                                <TableCell colSpan={5} className="text-left print:col-span-3">Total</TableCell>
+                                <TableCell colSpan={6} className="text-left print:col-span-3">Total</TableCell>
                                 <TableCell className="text-right">{reportTotals.totalScratched}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(reportTotals.totalGross)}</TableCell>
                                 <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalCommission)}</TableCell>
@@ -400,6 +422,18 @@ export default function CobrancaPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Visualizar Imagem</DialogTitle>
+                </DialogHeader>
+                {previewImage && (
+                    <div className="relative aspect-video w-full">
+                        <Image src={previewImage} alt="Visualização da cartela" fill className="object-contain" />
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }

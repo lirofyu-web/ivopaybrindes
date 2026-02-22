@@ -1,10 +1,10 @@
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X } from 'lucide-react';
+import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -22,6 +22,8 @@ import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import Image from 'next/image';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 function formatCurrency(value: number) {
@@ -60,6 +62,8 @@ const chargeFormSchema = z.object({
     prizeName: z.string(),
     quantity: z.coerce.number().min(1),
   })).optional(),
+  frontCardImageUrl: z.string().optional(),
+  backCardImageUrl: z.string().optional(),
 });
 
 
@@ -145,6 +149,15 @@ export default function ClientesPage() {
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
   
+  // Camera state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraFor, setCameraFor] = useState<'front' | 'back' | null>(null);
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [backImage, setBackImage] = useState<string | null>(null);
+
   const isLoading = isLoadingClients || isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes;
 
   const form = useForm<z.infer<typeof chargeFormSchema>>({
@@ -154,6 +167,36 @@ export default function ClientesPage() {
   
   const scratchedAmount = form.watch('scratchedAmount');
   const discount = form.watch('discount') || 0;
+
+    useEffect(() => {
+        if (isCameraOpen) {
+        const getCameraPermission = async () => {
+            try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+            setHasCameraPermission(true);
+            } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+            toast({
+                variant: 'destructive',
+                title: 'Acesso à Câmera Negado',
+                description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
+            });
+            }
+        };
+        getCameraPermission();
+        } else {
+            // Stop camera stream when not open
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
+                stream.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+            }
+        }
+    }, [isCameraOpen, toast]);
 
   const chargeCalculations = useMemo(() => {
     if (!selectedClient || !scratchedAmount) {
@@ -172,6 +215,10 @@ export default function ClientesPage() {
     setIsChargeDialogOpen(true);
     form.reset();
     setPrizesForCharge([]);
+    setFrontImage(null);
+    setBackImage(null);
+    setIsCameraOpen(false);
+    setHasCameraPermission(null);
     setSelectedPrizeForAdd(null);
     setPrizeQuantity(1);
   };
@@ -179,6 +226,7 @@ export default function ClientesPage() {
   const handleChargeDialogClose = (open: boolean) => {
     if (!open) {
       setSelectedClient(null);
+      setIsCameraOpen(false);
     }
     setIsChargeDialogOpen(open);
   }
@@ -303,6 +351,35 @@ export default function ClientesPage() {
     }, 500);
   };
 
+    const handleTakePhoto = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+
+        if (context) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUri = canvas.toDataURL('image/jpeg');
+            
+            if (cameraFor === 'front') {
+                setFrontImage(dataUri);
+                form.setValue('frontCardImageUrl', dataUri);
+            } else if (cameraFor === 'back') {
+                setBackImage(dataUri);
+                form.setValue('backCardImageUrl', dataUri);
+            }
+            setIsCameraOpen(false);
+            setCameraFor(null);
+        }
+    };
+
+    const openCamera = (type: 'front' | 'back') => {
+        setCameraFor(type);
+        setIsCameraOpen(true);
+    }
+
   const onChargeSubmit = async (values: z.infer<typeof chargeFormSchema>) => {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
@@ -322,6 +399,8 @@ export default function ClientesPage() {
         kitStatus: values.kitStatus,
         cartelaStatus: values.cartelaStatus,
         prizesGiven: prizesForCharge,
+        frontCardImageUrl: frontImage || undefined,
+        backCardImageUrl: backImage || undefined,
     };
     
     try {
@@ -355,6 +434,8 @@ export default function ClientesPage() {
     } finally {
       setIsSubmittingCharge(false);
       handleChargeDialogClose(false);
+      setFrontImage(null);
+      setBackImage(null);
     }
   };
 
@@ -432,6 +513,7 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-6">
+        <canvas ref={canvasRef} className="hidden"></canvas>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
                 <Users className="h-8 w-8 text-muted-foreground" />
@@ -622,7 +704,66 @@ export default function ClientesPage() {
                                 <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd}>Adicionar</Button>
                             </div>
                         </div>
+                        
+                        <Separator/>
 
+                        <div className="space-y-4">
+                            <h4 className="font-medium">Fotos da Cartela</h4>
+                            {isCameraOpen ? (
+                                <div className="space-y-4 p-4 border rounded-md">
+                                    <h5 className="font-semibold text-center">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
+                                    {hasCameraPermission === false && (
+                                        <Alert variant="destructive">
+                                            <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
+                                            <AlertDescription>
+                                                Por favor, permita o acesso à câmera para tirar a foto.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                    <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                                    <div className="flex gap-2 justify-center">
+                                        <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
+                                            <Camera className="mr-2 h-4 w-4" />
+                                            Tirar Foto
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <FormLabel>Frente</FormLabel>
+                                        {frontImage ? (
+                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                                <Image src={frontImage} alt="Frente da cartela" fill className="object-cover" />
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => setFrontImage(null)}>
+                                                    <X className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Button type="button" variant="outline" className="w-full h-24" onClick={() => openCamera('front')}>
+                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Foto
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <FormLabel>Verso</FormLabel>
+                                        {backImage ? (
+                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                                <Image src={backImage} alt="Verso da cartela" fill className="object-cover" />
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => setBackImage(null)}>
+                                                    <X className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Button type="button" variant="outline" className="w-full h-24" onClick={() => openCamera('back')}>
+                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Foto
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {scratchedAmount > 0 && selectedClient && (
                             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
