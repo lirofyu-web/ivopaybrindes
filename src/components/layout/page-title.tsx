@@ -19,6 +19,9 @@ export function PageTitle() {
     const pathname = usePathname();
 
     const title = useMemo(() => {
+        if (pathname.startsWith('/clientes/editar')) {
+            return 'Editar Cliente';
+        }
         const currentPath = navItems.find(item => item.href === pathname);
         if (currentPath) {
             return currentPath.label;

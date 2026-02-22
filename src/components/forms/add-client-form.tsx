@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,10 +16,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Globe, Loader2, X } from 'lucide-react';
-import type { Prize } from '@/lib/types';
+import type { Prize, Client } from '@/lib/types';
 import { mockPrizes } from '@/lib/mock-prizes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
@@ -38,7 +39,8 @@ const formSchema = z.object({
   })).optional(),
 });
 
-export function AddClientForm() {
+export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationStatus, setLocationStatus] = useState('Salvar localização atual');
   const [isLocating, setIsLocating] = useState(false);
@@ -46,10 +48,17 @@ export function AddClientForm() {
   const [initialPrizes, setInitialPrizes] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
+  
+  const isEditing = !!client;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: isEditing ? {
+      ...client,
+      city: client.city || '',
+      // Assuming prizes are not part of the initial client object for editing for now
+      prizes: client.prizes || [] 
+    } : {
       name: '',
       phone: '',
       address: '',
@@ -59,6 +68,18 @@ export function AddClientForm() {
       prizes: []
     },
   });
+
+  useEffect(() => {
+    if (isEditing && client.location) {
+        setLocationStatus('Localização salva!');
+    }
+    // Pre-fill prizes if they exist on the client object
+    if (isEditing && client.prizes) {
+        setInitialPrizes(client.prizes);
+        form.setValue('prizes', client.prizes);
+    }
+  }, [client, isEditing, form]);
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -72,14 +93,19 @@ export function AddClientForm() {
     setTimeout(() => {
       toast({
         title: 'Sucesso!',
-        description: `Cliente "${values.name}" adicionado.`,
+        description: isEditing ? `Cliente "${values.name}" atualizado.` : `Cliente "${values.name}" adicionado.`,
       });
       setIsSubmitting(false);
-      form.reset();
-      setLocationStatus('Salvar localização atual');
-      setInitialPrizes([]);
-      setSelectedPrizeForAdd(null);
-      setPrizeQuantity(1);
+      if (isEditing) {
+        router.push('/clientes');
+        router.refresh();
+      } else {
+        form.reset();
+        setLocationStatus('Salvar localização atual');
+        setInitialPrizes([]);
+        setSelectedPrizeForAdd(null);
+        setPrizeQuantity(1);
+      }
     }, 1000);
   }
   
@@ -291,7 +317,7 @@ export function AddClientForm() {
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Salvar Cliente
+          {isEditing ? 'Salvar Alterações' : 'Salvar Cliente'}
         </Button>
       </form>
     </Form>

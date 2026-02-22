@@ -104,9 +104,11 @@ function ClientCard({ client, onChargeClick }: { client: Client; onChargeClick: 
                 <DollarSign className="mr-2 h-4 w-4" />
                 Nova Cobrança
             </Button>
-            <Button size="icon" variant="outline" className="border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400">
-                <Edit className="h-4 w-4" />
-            </Button>
+            <Link href={`/clientes/editar/${client.id}`}>
+              <Button size="icon" variant="outline" className="border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400">
+                  <Edit className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button size="icon" variant="outline" className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400">
                 <Trash2 className="h-4 w-4" />
             </Button>
