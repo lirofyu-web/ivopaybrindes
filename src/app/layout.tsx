@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'MRD Gestão',
+  title: 'MRD Brindes',
   description: 'Gerenciamento e cobranças de raspinhas da sorte',
   manifest: '/manifest.json',
 };
@@ -26,7 +26,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap"
           rel="stylesheet"
         />
-        <meta name="theme-color" content="#29ABE2" />
+        <meta name="theme-color" content="#3182CE" />
       </head>
       <body className="font-body antialiased">
         {children}
