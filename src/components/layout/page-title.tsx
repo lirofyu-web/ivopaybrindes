@@ -8,6 +8,7 @@ const navItems = [
     { href: '/clientes', label: 'Clientes' },
     { href: '/clientes/novo', label: 'Novo Cliente' },
     { href: '/rotas', label: 'Rotas' },
+    { href: '/mapa', label: 'Mapa' },
     { href: '/premios', label: 'Prêmios' },
     { href: '/cobranca', label: 'Cobrança' },
     { href: '/relatorios', label: 'Relatórios' },

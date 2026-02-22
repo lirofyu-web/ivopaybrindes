@@ -7,6 +7,7 @@ import {
   DollarSign,
   Gift,
   MapPin,
+  Map as MapIcon,
   TrendingDown,
   Settings,
   Users,
@@ -27,6 +28,7 @@ import { AppLogo } from './logo';
 const navItems = [
   { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/rotas', label: 'Rotas', icon: MapPin, className: 'text-sky-400' },
+  { href: '/mapa', label: 'Mapa', icon: MapIcon, className: 'text-green-400' },
   { href: '/premios', label: 'Prêmios', icon: Gift, className: 'text-rose-400' },
   { href: '/cobranca', label: 'Cobrança', icon: DollarSign, className: 'text-emerald-400' },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart, className: 'text-orange-400' },
