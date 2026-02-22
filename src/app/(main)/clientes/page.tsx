@@ -71,6 +71,8 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
       : client.status === 'inactive'
       ? 'bg-red-500'
       : 'bg-yellow-500';
+      
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
     <Card className="bg-card/80 overflow-hidden shadow-lg border-border/50">
@@ -99,10 +101,12 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
         </div>
 
         <div className="space-y-2 text-sm text-foreground/80">
-            <div className="flex items-center gap-3">
-                <Home className="w-4 h-4 text-muted-foreground" />
-                <span>{client.address}, {client.city}</span>
-            </div>
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block hover:underline">
+                <div className="flex items-center gap-3">
+                    <Home className="w-4 h-4 text-muted-foreground" />
+                    <span>{client.address}, {client.city}</span>
+                </div>
+            </a>
             <div className="flex items-center gap-3">
                 <DollarSign className="w-4 h-4 text-muted-foreground" />
                 <span>Raspinha: {formatCurrency(client.raspinha)}</span>
