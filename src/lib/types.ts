@@ -13,6 +13,11 @@ export type Client = {
   createdAt: Date;
   raspinha: number;
   comissao: number;
+  prizes?: {
+      prizeId: string;
+      prizeName: string;
+      quantity: number;
+  }[];
 };
 
 export type Prize = {

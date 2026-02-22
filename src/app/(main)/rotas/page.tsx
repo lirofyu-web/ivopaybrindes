@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { mockClients } from '@/lib/mock-clients';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +18,26 @@ export default function RotasPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isListCollapsed, setIsListCollapsed] = useState(false);
     const [fullScreenMode, setFullScreenMode] = useState<'none' | 'map' | 'list'>('none');
+    const [clients, setClients] = useState<Client[]>([]);
+
+    useEffect(() => {
+        try {
+          const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
+          if (storedClientsRaw) {
+            const parsedClients = JSON.parse(storedClientsRaw).map((c: any) => ({
+              ...c,
+              createdAt: new Date(c.createdAt),
+            }));
+            setClients(parsedClients);
+          } else {
+            localStorage.setItem('mrd-brindes-clients', JSON.stringify(mockClients));
+            setClients(mockClients);
+          }
+        } catch (error) {
+          console.error("Failed to read clients from localStorage", error);
+          setClients(mockClients);
+        }
+      }, []);
 
     const ClientMap = useMemo(() => dynamic(
         () => import('@/components/map/client-map'),
@@ -27,7 +47,7 @@ export default function RotasPage() {
         }
     ), []);
 
-    const clientsWithLocation = useMemo(() => mockClients.filter(c => c.location), []);
+    const clientsWithLocation = useMemo(() => clients.filter(c => c.location), [clients]);
     
     const clientVisitStatus = useMemo(() => {
         const statusMap = new Map<string, 'visited' | 'not-visited'>();

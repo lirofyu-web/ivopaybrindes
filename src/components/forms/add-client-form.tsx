@@ -27,7 +27,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
   phone: z.string().min(10, 'Telefone inválido (inclua DDD).').max(15, 'Telefone inválido.'),
   address: z.string().min(2, 'Endereço deve ter pelo menos 2 caracteres.'),
-  city: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres.'),
+  city: z.string().min(5, 'Cidade / Estado deve ter pelo menos 5 caracteres.'),
   route: z.string().min(2, 'A rota deve ter pelo menos 2 caracteres.'),
   raspinha: z.coerce.number().min(0, 'O valor deve ser positivo.'),
   comissao: z.coerce.number().min(0, 'A comissão deve ser positiva.').max(100, 'A comissão não pode passar de 100%.'),
@@ -59,7 +59,6 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
       ...client,
       route: client.route || '',
       city: client.city || '',
-      // Assuming prizes are not part of the initial client object for editing for now
       prizes: client.prizes || [] 
     } : {
       name: '',
@@ -77,7 +76,6 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
     if (isEditing && client.location) {
         setLocationStatus('Localização salva!');
     }
-    // Pre-fill prizes if they exist on the client object
     if (isEditing && client.prizes) {
         setInitialPrizes(client.prizes);
         form.setValue('prizes', client.prizes);
@@ -87,28 +85,64 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    const submissionData = {
-        ...values,
-        prizes: initialPrizes
-    };
-    console.log(submissionData);
-
-    // Simulate API call
+    
     setTimeout(() => {
-      toast({
-        title: 'Sucesso!',
-        description: isEditing ? `Cliente "${values.name}" atualizado.` : `Cliente "${values.name}" adicionado.`,
-      });
-      setIsSubmitting(false);
-      if (isEditing) {
-        router.push('/clientes');
-        router.refresh();
-      } else {
-        form.reset();
-        setLocationStatus('Salvar localização atual');
-        setInitialPrizes([]);
-        setSelectedPrizeForAdd(null);
-        setPrizeQuantity(1);
+      try {
+        const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
+        const storedClients: Client[] = storedClientsRaw ? JSON.parse(storedClientsRaw).map((c: any) => ({...c, createdAt: new Date(c.createdAt)})) : [];
+        
+        let updatedClients: Client[];
+
+        if (isEditing && client) {
+            updatedClients = storedClients.map(c => c.id === client.id ? { ...c, ...values } : c);
+            toast({
+              title: 'Sucesso!',
+              description: `Cliente "${values.name}" atualizado.`,
+            });
+        } else {
+            const newClient: Client = {
+                id: `client-${Date.now()}`,
+                status: 'active',
+                createdAt: new Date(),
+                ...values,
+            };
+            updatedClients = [newClient, ...storedClients];
+            toast({
+              title: 'Sucesso!',
+              description: `Cliente "${values.name}" adicionado.`,
+            });
+        }
+
+        localStorage.setItem('mrd-brindes-clients', JSON.stringify(updatedClients));
+
+        setIsSubmitting(false);
+        if (isEditing) {
+          router.push('/clientes');
+          router.refresh();
+        } else {
+          form.reset({
+            name: '',
+            phone: '',
+            address: '',
+            city: '',
+            route: '',
+            raspinha: 2.0,
+            comissao: 25,
+            prizes: []
+          });
+          setLocationStatus('Salvar localização atual');
+          setInitialPrizes([]);
+          setSelectedPrizeForAdd(null);
+          setPrizeQuantity(1);
+        }
+      } catch (error) {
+        console.error("Failed to save to localStorage", error);
+        toast({
+          title: 'Erro!',
+          description: 'Não foi possível salvar os dados do cliente.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
       }
     }, 1000);
   }
@@ -229,12 +263,12 @@ export function AddClientForm({ client }: { client?: Client & {prizes?: any[]} }
           name="city"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cidade</FormLabel>
+              <FormLabel>Cidade / Estado</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Goiânia" {...field} />
+                <Input placeholder="Ex: Goiânia - GO" {...field} />
               </FormControl>
               <FormDescription>
-                A cidade onde o cliente está localizado.
+                A cidade e o estado onde o cliente está localizado.
               </FormDescription>
               <FormMessage />
             </FormItem>

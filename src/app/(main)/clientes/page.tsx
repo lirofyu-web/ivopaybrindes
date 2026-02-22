@@ -4,7 +4,7 @@ import { PlusCircle, Users, Search, Home, Percent, Edit, Trash2, DollarSign, Loa
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca } from '@/lib/types';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { mockClients } from '@/lib/mock-clients';
 import { useToast } from '@/hooks/use-toast';
@@ -134,7 +134,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 
 // --- Main Page Component ---
 export default function ClientesPage() {
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
@@ -150,6 +150,25 @@ export default function ClientesPage() {
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
+  
+  useEffect(() => {
+    try {
+      const storedClientsRaw = localStorage.getItem('mrd-brindes-clients');
+      if (storedClientsRaw) {
+        const parsedClients = JSON.parse(storedClientsRaw).map((c: any) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+        }));
+        setClients(parsedClients);
+      } else {
+        localStorage.setItem('mrd-brindes-clients', JSON.stringify(mockClients));
+        setClients(mockClients);
+      }
+    } catch (error) {
+      console.error("Failed to read clients from localStorage", error);
+      setClients(mockClients);
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
@@ -194,7 +213,11 @@ export default function ClientesPage() {
 
   const handleConfirmDelete = () => {
     if (!clientToDelete) return;
-    setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
+    
+    const updatedClients = clients.filter((c) => c.id !== clientToDelete.id);
+    localStorage.setItem('mrd-brindes-clients', JSON.stringify(updatedClients));
+    setClients(updatedClients);
+
     toast({
       title: 'Cliente Excluído!',
       description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
@@ -266,8 +289,6 @@ export default function ClientesPage() {
     
     console.log(newCharge);
 
-    // In a real app, you'd save this to a database and update prize stock.
-    // For this mock implementation, we add it to a state to see the visit status update.
     setNewlyAddedCobrancas(prev => [newCharge, ...prev]);
 
     setTimeout(() => {
