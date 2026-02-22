@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { mockClients } from '@/lib/mock-clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, List, User, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Map, List, User, PanelLeftClose, PanelLeftOpen, Maximize, Minimize } from 'lucide-react';
 import type { Client } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 export default function RotasPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isListCollapsed, setIsListCollapsed] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
     const ClientMap = useMemo(() => dynamic(
         () => import('@/components/map/client-map'),
@@ -26,14 +27,22 @@ export default function RotasPage() {
     const clientsWithLocation = useMemo(() => mockClients.filter(c => c.location), []);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-3">
+        <div className={cn(!isFullScreen && "space-y-6")}>
+            <div className={cn(
+                "flex items-center gap-3",
+                isFullScreen && "hidden"
+            )}>
                 <Map className="h-8 w-8 text-muted-foreground" />
                 <h1 className="text-3xl font-bold font-headline">
                     Rotas de Clientes
                 </h1>
             </div>
-            <div className="relative flex flex-col lg:flex-row gap-4 h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
+            <div className={cn(
+                "relative flex flex-col lg:flex-row gap-4",
+                isFullScreen 
+                    ? "fixed inset-0 z-50 bg-background p-4" 
+                    : "h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]"
+            )}>
                 
                 <Button
                     size="icon"
@@ -46,6 +55,16 @@ export default function RotasPage() {
                     aria-label="Mostrar lista de clientes"
                 >
                     <PanelLeftOpen className="h-5 w-5" />
+                </Button>
+
+                <Button
+                    size="icon"
+                    variant="outline"
+                    className="absolute top-2 right-2 z-20 bg-card/80 backdrop-blur-sm"
+                    onClick={() => setIsFullScreen(!isFullScreen)}
+                    aria-label={isFullScreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
+                >
+                    {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
                 </Button>
 
                 <Card className={cn(
