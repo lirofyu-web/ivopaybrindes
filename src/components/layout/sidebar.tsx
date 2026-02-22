@@ -61,7 +61,6 @@ export default function AppSidebar() {
             <SidebarMenuItem key={item.label}>
               <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuButton
-                  as="a"
                   isActive={
                     pathname === item.href ||
                     (item.href !== '/' && pathname.startsWith(item.href))
