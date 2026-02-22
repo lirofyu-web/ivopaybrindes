@@ -39,6 +39,7 @@ export default function CobrancaPage() {
                             <TableHead className="text-right">Qtd. Raspadinhas</TableHead>
                             <TableHead className="text-right">Total Bruto</TableHead>
                             <TableHead className="text-right">Comissão</TableHead>
+                            <TableHead className="text-right">Desconto</TableHead>
                             <TableHead className="text-right">Valor Líquido</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -53,12 +54,13 @@ export default function CobrancaPage() {
                                         <TableCell className="text-right">{cobranca.scratchedAmount}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(cobranca.grossRevenue)}</TableCell>
                                         <TableCell className="text-right text-destructive">-{formatCurrency(cobranca.commissionValue)}</TableCell>
+                                        <TableCell className="text-right text-destructive">{cobranca.discount ? `-${formatCurrency(cobranca.discount)}` : formatCurrency(0)}</TableCell>
                                         <TableCell className="text-right font-semibold text-primary">{formatCurrency(cobranca.netRevenue)}</TableCell>
                                     </TableRow>
                                 ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     Nenhuma cobrança registrada.
                                 </TableCell>
                             </TableRow>

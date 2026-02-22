@@ -24,7 +24,8 @@ export const mockCobrancas: Cobranca[] = [
     commissionPercentage: 20,
     grossRevenue: 375.00,
     commissionValue: 75.00,
-    netRevenue: 300.00,
+    discount: 25.00,
+    netRevenue: 275.00,
   },
    {
     id: '3',

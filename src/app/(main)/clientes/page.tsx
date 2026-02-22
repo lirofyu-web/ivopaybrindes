@@ -44,6 +44,7 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
 // --- Charge Form Schema ---
 const chargeFormSchema = z.object({
   scratchedAmount: z.coerce.number().min(1, 'A quantidade deve ser pelo menos 1.'),
+  discount: z.coerce.number().optional(),
 });
 
 
@@ -115,20 +116,22 @@ export default function ClientesPage() {
 
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
-    defaultValues: { scratchedAmount: 0 },
+    defaultValues: { scratchedAmount: 0, discount: 0 },
   });
   
   const scratchedAmount = form.watch('scratchedAmount');
+  const discount = form.watch('discount') || 0;
 
   const chargeCalculations = useMemo(() => {
     if (!selectedClient || !scratchedAmount) {
-      return { grossRevenue: 0, commissionValue: 0, netRevenue: 0 };
+      return { grossRevenue: 0, commissionValue: 0, netRevenue: 0, finalNetRevenue: 0 };
     }
     const grossRevenue = scratchedAmount * selectedClient.raspinha;
     const commissionValue = grossRevenue * (selectedClient.comissao / 100);
     const netRevenue = grossRevenue - commissionValue;
-    return { grossRevenue, commissionValue, netRevenue };
-  }, [selectedClient, scratchedAmount]);
+    const finalNetRevenue = netRevenue - discount;
+    return { grossRevenue, commissionValue, netRevenue, finalNetRevenue };
+  }, [selectedClient, scratchedAmount, discount]);
 
 
   const handleOpenChargeDialog = (client: Client) => {
@@ -251,6 +254,19 @@ export default function ClientesPage() {
                                 </FormItem>
                             )}
                         />
+                        <FormField
+                            control={form.control}
+                            name="discount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Desconto (R$)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="Ex: 10,00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         
                         {scratchedAmount > 0 && selectedClient && (
                             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
@@ -264,11 +280,17 @@ export default function ClientesPage() {
                                         <span className="text-muted-foreground">Comissão do Cliente ({selectedClient.comissao}%)</span>
                                         <span className="text-destructive">-{formatCurrency(chargeCalculations.commissionValue)}</span>
                                     </div>
+                                    {discount > 0 && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Desconto</span>
+                                        <span className="text-destructive">-{formatCurrency(discount)}</span>
+                                    </div>
+                                    )}
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between items-center text-base font-bold">
                                     <span>Valor Líquido (para a empresa)</span>
-                                    <span className="text-primary">{formatCurrency(chargeCalculations.netRevenue)}</span>
+                                    <span className="text-primary">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
                                 </div>
                             </div>
                         )}

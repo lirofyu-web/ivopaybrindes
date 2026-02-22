@@ -32,4 +32,5 @@ export type Cobranca = {
   grossRevenue: number;
   commissionValue: number;
   netRevenue: number;
+  discount?: number;
 };
