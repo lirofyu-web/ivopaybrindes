@@ -38,7 +38,24 @@ const navItems = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    const elem = document.documentElement;
+    // Check if not already in fullscreen and if the API is available
+    if (!document.fullscreenElement) {
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(() => {
+              // Silently catch errors, e.g., user denying permission
+            });
+        } else if ((elem as any).webkitRequestFullscreen) { // Safari
+            (elem as any).webkitRequestFullscreen();
+        }
+    }
+  };
 
   return (
     <Sidebar
@@ -59,7 +76,7 @@ export default function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <Link href={item.href} passHref legacyBehavior>
+              <Link href={item.href} passHref legacyBehavior onClick={handleNavClick}>
                 <SidebarMenuButton
                   isActive={
                     pathname === item.href ||
