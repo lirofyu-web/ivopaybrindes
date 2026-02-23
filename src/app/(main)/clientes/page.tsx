@@ -72,12 +72,12 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
-    <Card className="bg-card/80 overflow-hidden shadow-lg border-border/50">
+    <Card className="bg-card/80 shadow-lg border-border/50">
       <CardContent className="p-4 space-y-4">
         <div className="flex justify-between items-start">
             <div className="space-y-1">
                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-xl font-bold text-accent">{client.name}</h3>
+                    <h3 className="text-lg font-bold text-accent">{client.name}</h3>
                     <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-xs font-normal">
                       {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
                     </Badge>
