@@ -403,9 +403,9 @@ export function AddClientForm({ client }: { client?: Client }) {
                         <SelectContent>
                             {prizes?.map(prize => (
                                 <SelectItem key={prize.id} value={prize.id!}>
-                                     <div className="flex justify-between w-full">
-                                        <span>{prize.name}</span>
-                                        <span className="text-muted-foreground text-xs">Estoque: {prize.quantity}</span>
+                                     <div className="flex justify-between items-center w-full gap-4">
+                                        <span className="truncate">{prize.name}</span>
+                                        <span className="text-muted-foreground text-xs flex-shrink-0">Estoque: {prize.quantity}</span>
                                     </div>
                                 </SelectItem>
                             ))}
