@@ -745,7 +745,7 @@ export default function ClientesPage() {
                             ) : (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <FormLabel>Frente</FormLabel>
+                                        <FormLabel>Frente <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
                                         {frontImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={frontImage} alt="Frente da cartela" fill className="object-cover" />
@@ -760,7 +760,7 @@ export default function ClientesPage() {
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <FormLabel>Verso</FormLabel>
+                                        <FormLabel>Verso <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
                                         {backImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={backImage} alt="Verso da cartela" fill className="object-cover" />
