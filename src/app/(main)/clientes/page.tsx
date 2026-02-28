@@ -1,3 +1,4 @@
+
 'use client'
 import Link from 'next/link';
 import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon } from 'lucide-react';
@@ -159,7 +160,6 @@ export default function ClientesPage() {
     const startCamera = async () => {
       if (isCameraOpen) {
         try {
-          // Utiliza explicitamente a câmera traseira (environment) para todas as fotos da cartela
           stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment' } 
           });
@@ -254,10 +254,31 @@ export default function ClientesPage() {
     if (!videoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')?.drawImage(video, 0, 0);
-    const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Redimensiona para garantir que não exceda o limite do Firestore (1MB)
+    const MAX_WIDTH = 1024;
+    const MAX_HEIGHT = 768;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+
+    if (width > height) {
+      if (width > MAX_WIDTH) {
+        height *= MAX_WIDTH / width;
+        width = MAX_WIDTH;
+      }
+    } else {
+      if (height > MAX_HEIGHT) {
+        width *= MAX_HEIGHT / height;
+        height = MAX_HEIGHT;
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, width, height);
+    
+    // Qualidade 0.6 para economia de espaço e garantia de salvamento offline
+    const dataUri = canvas.toDataURL('image/jpeg', 0.6);
     if (cameraFor === 'front') {
         setFrontImage(dataUri);
         form.setValue('frontCardImageUrl', dataUri);
@@ -295,10 +316,14 @@ export default function ClientesPage() {
     
     try {
       const newRef = doc(collection(firestore, 'cobrancas'));
+      
+      // No modo offline com persistência, o setDoc resolve localmente de imediato
       await setDoc(newRef, chargeData);
+      
       for (const p of prizesForCharge) {
         await updateDoc(doc(firestore, 'premios', p.prizeId), { quantity: increment(-p.quantity) });
       }
+      
       triggerSuccess();
       toast({ title: 'Cobrança Salva!', description: `Sucesso para ${selectedClient.name}` });
       handlePrintReceipt({ ...chargeData, id: newRef.id });

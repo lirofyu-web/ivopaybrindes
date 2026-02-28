@@ -2,7 +2,7 @@
 'use client';
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableMultiTabIndexedDbPersistence, enableIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 // Hooks
@@ -32,15 +32,21 @@ async function initializeFirebase() {
     firestore = getFirestore(firebaseApp);
   }
 
-  // Ativação da persistência offline para funcionamento sem internet
+  // Ativação da persistência offline aprimorada
   if (!persistenceEnabled && typeof window !== 'undefined') {
       try {
         await enableMultiTabIndexedDbPersistence(firestore);
         persistenceEnabled = true;
       } catch (err: any) {
-        if (err.code == 'failed-precondition') {
-          console.warn('Persistência offline falhou: Múltiplas abas abertas.');
-        } else if (err.code == 'unimplemented') {
+        if (err.code === 'failed-precondition') {
+          // Tenta persistência em aba única se multi-aba falhar
+          try {
+            await enableIndexedDbPersistence(firestore);
+            persistenceEnabled = true;
+          } catch (innerErr) {
+            console.warn('Persistência offline falhou completamente:', innerErr);
+          }
+        } else if (err.code === 'unimplemented') {
           console.warn('O navegador não suporta persistência offline.');
         }
       }

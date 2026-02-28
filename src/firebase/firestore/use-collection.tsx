@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
@@ -10,6 +11,7 @@ function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'upda
     const processedData: any = { ...data, id: doc.id };
 
     for (const key in processedData) {
+        // Verifica se é um Timestamp do Firebase ou se já é uma data (cache local)
         if (processedData[key]?.toDate) {
             processedData[key] = processedData[key].toDate();
         }
@@ -31,7 +33,9 @@ export function useCollection<T>(path: string) {
         };
 
         const collectionRef = collection(firestore, path);
-        const unsubscribe = onSnapshot(collectionRef,
+        // includeMetadataChanges garante que o cache local dispare o snapshot imediatamente
+        const unsubscribe = onSnapshot(collectionRef, 
+            { includeMetadataChanges: true },
             (snapshot) => {
                 const docs = snapshot.docs.map(doc => processDoc<T>(doc));
                 setData(docs);
