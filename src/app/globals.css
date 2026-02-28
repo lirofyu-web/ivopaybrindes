@@ -85,26 +85,14 @@
 }
 
 @keyframes checkmark {
-  0% {
-    stroke-dashoffset: 48;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
+  0% { stroke-dashoffset: 48; }
+  100% { stroke-dashoffset: 0; }
 }
 
 @keyframes scaleUp {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-checkmark {
@@ -135,10 +123,6 @@
     @apply text-xl font-bold;
   }
 
-  .card-mobile-padding {
-    @apply p-4;
-  }
-
   /* Prevent text cutting and ensure centering */
   .truncate-mobile {
     @apply truncate max-w-[140px];
@@ -146,5 +130,10 @@
 
   .flex-center-mobile {
     @apply flex items-center justify-center;
+  }
+
+  /* Card and Form adjustments for mobile touch */
+  .button-mobile {
+    @apply h-12 text-base;
   }
 }

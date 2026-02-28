@@ -91,7 +91,6 @@ export default function CobrancaPage() {
         });
     }, [filteredCobrancas]);
 
-
     const handlePrint = () => {
         const reportContentNode = document.getElementById('report-content-desktop');
         if (!reportContentNode) return;
@@ -219,24 +218,24 @@ export default function CobrancaPage() {
             <Button onClick={handlePrint} className="h-11 w-full sm:w-auto"><Printer className="mr-2 h-4 w-4" />Imprimir Relatório</Button>
         </div>
 
-        {/* --- MOBILE VIEW (CARDS) --- */}
+        {/* --- MOBILE VIEW (CARDS CENTRALIZADOS) --- */}
         <div className="grid gap-4 md:hidden">
             {filteredCobrancas.length > 0 ? (
                 filteredCobrancas.map((cobranca) => (
-                    <Card key={cobranca.id} className="bg-card/80 shadow-md border-border/40 overflow-hidden">
+                    <Card key={cobranca.id} className="bg-card/80 shadow-md border-border/40 overflow-hidden mx-auto w-full max-w-sm">
                         <CardContent className="p-4 space-y-3">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="text-base font-bold text-accent">{cobranca.clientName}</h3>
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                <div className="space-y-1">
+                                    <h3 className="text-base font-bold text-accent leading-tight">{cobranca.clientName}</h3>
+                                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                         <MapPin className="h-3 w-3" />
                                         <span>{cobranca.route}</span>
-                                        <span className="mx-1">•</span>
+                                        <span className="mx-0.5">•</span>
                                         <Calendar className="h-3 w-3" />
                                         <span>{formatDate(cobranca.createdAt)}</span>
                                     </div>
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 flex-shrink-0">
                                     {(cobranca.frontCardImageUrl || cobranca.backCardImageUrl) && (
                                         <Button variant="ghost" size="icon" className="h-8 w-8 bg-muted/50" onClick={() => setPreviewImage(cobranca.frontCardImageUrl || cobranca.backCardImageUrl!)}>
                                             <Camera className="h-4 w-4" />
@@ -253,7 +252,7 @@ export default function CobrancaPage() {
 
                             <Separator />
 
-                            <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="grid grid-cols-2 gap-3 text-xs">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1.5"><Package className="h-3 w-3 text-primary" /><span>Kit: {cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></div>
                                     <div className="flex items-center gap-1.5"><Layers className="h-3 w-3 text-primary" /><span>Cartela: {cobranca.cartelaStatus === 'nova' ? 'Nova' : 'Manteve'}</span></div>
@@ -283,15 +282,15 @@ export default function CobrancaPage() {
                     </Card>
                 ))
             ) : (
-                <div className="text-center py-10 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                <div className="text-center py-10 text-muted-foreground bg-muted/20 rounded-lg border border-dashed mx-auto w-full max-w-sm">
                     Nenhuma cobrança encontrada.
                 </div>
             )}
             
             {filteredCobrancas.length > 0 && (
-                 <Card className="bg-primary/5 border-primary/20">
+                 <Card className="bg-primary/5 border-primary/20 mx-auto w-full max-w-sm">
                     <CardContent className="p-4">
-                        <h4 className="font-bold text-xs uppercase tracking-wider mb-2 text-primary">Resumo do Período</h4>
+                        <h4 className="font-bold text-xs uppercase tracking-wider mb-2 text-primary text-center sm:text-left">Resumo do Período</h4>
                         <div className="space-y-1.5 text-xs">
                             <div className="flex justify-between"><span>Total Raspadas:</span><span className="font-bold">{reportTotals.totalScratched}</span></div>
                             <div className="flex justify-between"><span>Total Bruto:</span><span className="font-bold">{formatCurrency(reportTotals.totalGross)}</span></div>
@@ -308,10 +307,6 @@ export default function CobrancaPage() {
         {/* --- DESKTOP VIEW (TABLE) --- */}
         <Card className="hidden md:block">
             <CardContent className="p-0" id="report-content-desktop">
-                <div className="hidden print:block p-6 border-b">
-                    <h2 className="text-xl font-bold">Relatório de Cobranças</h2>
-                    <p className="text-sm text-muted-foreground">Rota: {selectedRoute === 'all' ? 'Todas' : selectedRoute}</p>
-                </div>
                 <Table>
                     <TableHeader>
                         <TableRow>
