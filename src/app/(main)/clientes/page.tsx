@@ -270,7 +270,7 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Clean undefined values for Firestore
+    // Limpar valores indefinidos para o Firestore não rejeitar
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -303,7 +303,7 @@ export default function ClientesPage() {
       handleChargeDialogClose(false);
     } catch (error: any) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Erro!', description: 'Falha ao salvar.' });
+      toast({ variant: 'destructive', title: 'Erro!', description: 'Falha ao salvar cobrança.' });
     } finally {
       setIsSubmittingCharge(false);
     }

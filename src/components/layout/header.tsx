@@ -1,3 +1,4 @@
+
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { PageTitle } from './page-title';
@@ -17,7 +18,6 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // The useUser hook will trigger a redirect to /login
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -58,9 +58,6 @@ export default function Header() {
                 <DropdownMenuLabel>{user.displayName}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                      <DropdownMenuLabel className="px-2 pb-2 text-xs font-normal text-muted-foreground">
-                          Clique abaixo para encerrar a sessão com segurança.
-                      </DropdownMenuLabel>
                       <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                           <LogOut className="mr-2 h-4 w-4"/>
                           Sair
