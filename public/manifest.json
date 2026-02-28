@@ -2,7 +2,7 @@
   "name": "MRD Brindes",
   "short_name": "MRD Brindes",
   "description": "Gerenciamento e cobranças de raspinhas da sorte",
-  "start_url": "/clientes",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#3B82F6",

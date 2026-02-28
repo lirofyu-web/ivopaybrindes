@@ -13,7 +13,7 @@ Para subir este código para o seu repositório oficial, siga estes passos exato
 ```bash
 git init
 git add .
-git commit -m "Versão Final - Otimizada para Mobile com IA e Animações"
+git commit -m "Versão Final - Otimizada para Mobile com Offline e PWA"
 git branch -M main
 git remote add origin https://github.com/lirofyu-web/studio.git
 git push -u origin main
@@ -21,11 +21,11 @@ git push -u origin main
 
 ## Destaques do Aplicativo
 
-- **Assistente IA (Gemini)**: Converse com a inteligência artificial sobre seus dados de clientes e vendas diretamente no menu.
+- **Offline Sync**: Funciona sem internet. Os dados são sincronizados automaticamente quando a conexão volta.
 - **Relatórios de Campo**: No Mapa, utilize o botão "Imprimir Viagem" para gerar roteiros com campos de checklist (SIM/NÃO).
-- **PWA Instalável**: Funciona como um aplicativo nativo no Android (Chrome) e iOS (Safari).
+- **PWA Instalável**: Pode ser instalado como um aplicativo nativo no Android (Chrome) e iOS (Safari).
 - **Animações de Sucesso**: Feedback visual instantâneo em cada operação de salvamento.
-- **Offline Sync**: Sincronização automática com Firebase Firestore.
+- **Segurança**: Integração nativa com Firebase Authentication e Firestore.
 
 ---
 © 2024 MRD Brindes - Tecnologia para o campo.
