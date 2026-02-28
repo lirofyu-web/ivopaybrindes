@@ -73,6 +73,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+}
+
+@layer components {
+  .mobile-container {
+    @apply px-2 sm:px-6 w-full max-w-7xl mx-auto;
   }
 }

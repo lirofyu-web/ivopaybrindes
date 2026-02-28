@@ -26,7 +26,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
    if (error) {
-    // Handle error state, maybe show an error message
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background text-destructive">
         <p>Ocorreu um erro ao verificar a autenticação. Tente recarregar a página.</p>
@@ -37,9 +36,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-h-svh flex flex-col">
         <Header />
-        <div className="p-2 sm:p-6">{children}</div>
+        <div className="flex-1 p-3 sm:p-6 overflow-x-hidden">
+          <div className="max-w-7xl mx-auto w-full">
+            {children}
+          </div>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

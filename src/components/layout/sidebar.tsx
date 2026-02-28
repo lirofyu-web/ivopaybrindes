@@ -44,16 +44,15 @@ export default function AppSidebar() {
     if (isMobile) {
       setOpenMobile(false);
     }
+    
+    // Attempt to go fullscreen on interaction
     const elem = document.documentElement;
-    // Check if not already in fullscreen and if the API is available
     if (!document.fullscreenElement) {
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(() => {
-              // Silently catch errors, e.g., user denying permission
-            });
-        } else if ((elem as any).webkitRequestFullscreen) { // Safari
-            (elem as any).webkitRequestFullscreen();
-        }
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if ((elem as any).webkitRequestFullscreen) {
+        (elem as any).webkitRequestFullscreen();
+      }
     }
   };
 
@@ -76,8 +75,9 @@ export default function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <Link href={item.href} passHref legacyBehavior onClick={handleNavClick}>
+              <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuButton
+                  onClick={handleNavClick}
                   isActive={
                     pathname === item.href ||
                     (item.href !== '/' && pathname.startsWith(item.href))
