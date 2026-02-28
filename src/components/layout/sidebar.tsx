@@ -44,7 +44,6 @@ export default function AppSidebar() {
       setOpenMobile(false);
     }
     
-    // Request fullscreen on user interaction for a real PWA experience
     const doc = window.document.documentElement as any;
     const requestFullScreen = doc.requestFullscreen || doc.webkitRequestFullScreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
 
@@ -63,22 +62,24 @@ export default function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="p-2 gap-1.5">
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <Link href={item.href} passHref legacyBehavior>
-                <SidebarMenuButton
-                  onClick={handleNavClick}
-                  isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-                  className="h-11 px-3"
-                >
-                  <item.icon className={item.className} />
-                  <span className="font-medium">{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        <div className="px-2">
+          <SidebarMenu className="p-2 gap-1.5 bg-red-600 rounded-lg shadow-inner">
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.label}>
+                <Link href={item.href} passHref legacyBehavior>
+                  <SidebarMenuButton
+                    onClick={handleNavClick}
+                    isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                    className="h-11 px-3 text-white hover:bg-white/10 data-[active=true]:bg-white/20 data-[active=true]:text-white"
+                  >
+                    <item.icon className={item.className} />
+                    <span className="font-medium">{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
