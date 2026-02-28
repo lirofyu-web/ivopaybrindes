@@ -6,8 +6,8 @@ Este é um sistema PWA (Progressive Web App) desenvolvido para gerenciamento de 
 
 Para enviar este projeto para o repositório que você criou, siga estes passos no seu terminal local:
 
-1. **Baixe os arquivos** do projeto para o seu computador.
-2. **Abra o terminal** na pasta do projeto.
+1. **Baixe os arquivos** do projeto clicando no botão de download na interface do Firebase Studio.
+2. **Abra o terminal** na pasta que você extraiu os arquivos.
 3. **Execute os comandos abaixo**:
 
 ```bash
@@ -34,15 +34,11 @@ git push -u origin main
 
 - **Gestão de Clientes**: Cadastro completo com localização GPS e integração direta com WhatsApp.
 - **Controle de Cobranças**: Registro de vendas, cálculo automático de comissão e geração de recibos térmicos (80mm).
-- **Mapa de Clientes**: Visualização geográfica dos clientes com status de visita (Visitado vs. Não Visitado).
-- **Gestão de Estoque de Prêmios**: Controle de brindes e kits iniciais.
-- **Relatórios**: Histórico de cobranças e despesas com filtros por rota e data.
-- **Modo PWA**: Instalável em dispositivos móveis com suporte a tela cheia.
 - **Animações de Sucesso**: Feedback visual em todas as operações de salvamento.
+- **Modo PWA**: Instalável em dispositivos móveis como um aplicativo nativo.
 
 ## Tecnologias Utilizadas
 
 - **Frontend**: Next.js 14, React, Tailwind CSS, ShadCN UI.
-- **Backend/Banco de Dados**: Firebase (Firestore, Auth).
-- **Inteligência Artificial**: Google Genkit.
+- **Backend**: Firebase (Firestore, Auth).
 - **Mapas**: React Leaflet.
