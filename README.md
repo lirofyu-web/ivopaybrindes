@@ -23,7 +23,7 @@ git commit -m "Initial commit - MRD Brindes System"
 # Configure a branch principal
 git branch -M main
 
-# Conecte ao seu repositório remoto
+# Conecte ao seu repositório remoto (URL que você forneceu)
 git remote add origin https://github.com/lirofyu-web/studio.git
 
 # Envie os arquivos (será solicitado seu usuário e senha/token do GitHub)
@@ -34,7 +34,7 @@ git push -u origin main
 
 - **Gestão de Clientes**: Cadastro completo com localização GPS e integração direta com WhatsApp.
 - **Controle de Cobranças**: Registro de vendas, cálculo automático de comissão e geração de recibos térmicos (80mm).
-- **Animações de Sucesso**: Feedback visual em todas as operações de salvamento.
+- **Animações de Sucesso**: Feedback visual (Animação de Check) em todas as operações de salvamento.
 - **Modo PWA**: Instalável em dispositivos móveis como um aplicativo nativo.
 
 ## Tecnologias Utilizadas
