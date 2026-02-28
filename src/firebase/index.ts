@@ -31,15 +31,16 @@ async function initializeFirebase() {
     firestore = getFirestore(firebaseApp);
   }
 
+  // Ativação da persistência offline para funcionamento sem internet
   if (!persistenceEnabled && typeof window !== 'undefined') {
       try {
         await enableMultiTabIndexedDbPersistence(firestore);
         persistenceEnabled = true;
       } catch (err: any) {
         if (err.code == 'failed-precondition') {
-          console.warn('Firestore persistence failed. This is likely due to multiple tabs open.');
+          console.warn('Persistência offline falhou: Múltiplas abas abertas.');
         } else if (err.code == 'unimplemented') {
-          console.warn('The current browser does not support all of the features required to enable persistence.');
+          console.warn('O navegador não suporta persistência offline.');
         }
       }
   }

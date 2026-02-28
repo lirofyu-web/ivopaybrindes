@@ -23,8 +23,8 @@ git push -u origin main
 
 - **Offline Sync**: Funciona sem internet. Os dados são sincronizados automaticamente quando a conexão volta.
 - **Relatórios de Campo**: No Mapa, utilize o botão "Imprimir Viagem" para gerar roteiros com campos de checklist (SIM/NÃO).
+- **Câmera Traseira Forçada**: Captura fotos de cartelas com máxima nitidez.
 - **PWA Instalável**: Pode ser instalado como um aplicativo nativo no Android (Chrome) e iOS (Safari).
-- **Animações de Sucesso**: Feedback visual instantâneo em cada operação de salvamento.
 - **Segurança**: Integração nativa com Firebase Authentication e Firestore.
 
 ---

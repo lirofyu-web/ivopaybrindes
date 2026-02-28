@@ -49,7 +49,7 @@ export default function AppSidebar() {
 
     if (!window.document.fullscreenElement) {
         requestFullScreen?.call(doc).catch((err: any) => {
-            console.warn(`Fullscreen error: ${err.message}`);
+            console.warn(`Erro ao entrar em tela cheia: ${err.message}`);
         });
     }
   };
@@ -63,6 +63,7 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <div className="px-2">
+          {/* Menu com fundo azul marinho conforme solicitado */}
           <SidebarMenu className="p-2 gap-1.5 bg-slate-950 rounded-lg shadow-inner">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.label}>
