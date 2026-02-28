@@ -208,7 +208,7 @@ export function AddClientForm({ client }: { client?: Client }) {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-lg bg-muted/20">
+            <div className="grid grid-cols-1 gap-3 p-3 border rounded-lg bg-muted/20">
                 <Select onValueChange={(id) => setSelectedPrizeForAdd(prizes?.find(p => p.id === id) || null)} value={selectedPrizeForAdd?.id || ''}>
                     <SelectTrigger className="h-10 text-xs"><SelectValue placeholder="Escolher Item"/></SelectTrigger>
                     <SelectContent>{prizes?.map(p => <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent>

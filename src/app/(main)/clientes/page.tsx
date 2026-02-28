@@ -57,7 +57,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
-    <Card className="bg-card/80 shadow-lg border-border/50 overflow-hidden">
+    <Card className="bg-card/80 shadow-lg border-border/50 overflow-hidden card-mobile-centralized">
       <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         <div className="flex justify-between items-start">
             <div className="space-y-1 flex-1 min-w-0 pr-2">

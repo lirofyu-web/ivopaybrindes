@@ -25,7 +25,7 @@
     --border: 210 40% 89.8%;
     --input: 210 40% 89.8%;
     --ring: 217 91% 60%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
   .dark {
     --background: 222 47% 11%;
@@ -81,5 +81,6 @@
   table th, table td { @apply px-2 py-3 text-[11px] leading-tight; }
   .font-headline { @apply text-xl font-bold; }
   .button-mobile { @apply h-12 text-base; }
-  .max-w-2xl { @apply w-full max-w-full px-2; }
+  .max-w-2xl { @apply w-full max-w-full px-2 mx-auto; }
+  .card-mobile-centralized { @apply w-full max-w-sm mx-auto; }
 }
