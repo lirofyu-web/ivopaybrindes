@@ -79,6 +79,21 @@
 
 @layer components {
   .mobile-container {
-    @apply px-2 sm:px-6 w-full max-w-7xl mx-auto;
+    @apply px-1 sm:px-6 w-full max-w-7xl mx-auto;
+  }
+}
+
+/* Custom Table Adjustments for Mobile */
+@media (max-width: 640px) {
+  .recharts-responsive-container {
+    min-height: 250px;
+  }
+  
+  table th, table td {
+    @apply px-1 py-2 text-[11px] leading-tight;
+  }
+
+  .font-headline {
+    @apply text-center w-full block;
   }
 }

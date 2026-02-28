@@ -22,8 +22,6 @@ import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -186,7 +184,7 @@ export default function ClientesPage() {
                         title: 'Acesso à Câmera Negado',
                         description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
                     });
-                    setIsCameraOpen(false); // Close camera view if permission is denied
+                    setIsCameraOpen(false); 
                 }
             }
         };
@@ -293,7 +291,6 @@ export default function ClientesPage() {
         return updatedPrizes;
     });
     
-    // Reset fields
     setSelectedPrizeForAdd(null);
     setPrizeQuantity(1);
   };
@@ -392,7 +389,6 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Prepare a clean object for Firestore (Firebase doesn't like 'undefined' values)
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -407,7 +403,6 @@ export default function ClientesPage() {
         discount: values.discount || 0,
     };
     
-    // Add optional fields only if they have values
     if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
     if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
     if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
@@ -415,14 +410,11 @@ export default function ClientesPage() {
     if (prizesForCharge && prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
     
     try {
-      // Create document reference manually to get ID before setting
       const newChargeRef = doc(collection(firestore, 'cobrancas'));
       const chargeId = newChargeRef.id;
 
-      // Start saving process without blocking the entire UI wait
       await setDoc(newChargeRef, chargeData);
       
-      // Update prize stock for each prize given
       for (const prizeGiven of prizesForCharge) {
         const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
         await updateDoc(prizeDocRef, {
@@ -435,10 +427,8 @@ export default function ClientesPage() {
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
       });
       
-      // Open receipt for printing
       handlePrintReceipt({ ...chargeData, id: chargeId });
 
-      // Reset state and close
       handleChargeDialogClose(false);
       form.reset();
       setPrizesForCharge([]);
@@ -533,17 +523,17 @@ export default function ClientesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mobile-container">
         <canvas ref={canvasRef} className="hidden"></canvas>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
                 <Users className="h-8 w-8 text-muted-foreground" />
-                <h1 className="text-3xl font-bold font-headline">
+                <h1 className="text-2xl sm:text-3xl font-bold font-headline">
                     Gerenciar Clientes
                 </h1>
             </div>
-            <Link href="/clientes/novo">
-                <Button>
+            <Link href="/clientes/novo" className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Novo Cliente
                 </Button>
@@ -563,11 +553,11 @@ export default function ClientesPage() {
         <div className="space-y-8">
             {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients: routeClients }]) => (
                 <div key={routeName} className="space-y-4">
-                    <h2 className="text-xl font-semibold border-b border-border pb-2">
+                    <h2 className="text-lg font-semibold border-b border-border pb-2 px-1">
                         {routeName}
-                        {description && <span className="text-sm font-normal text-muted-foreground ml-2">- {description}</span>}
+                        {description && <span className="text-xs font-normal text-muted-foreground ml-2">- {description}</span>}
                     </h2>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 px-1">
                         {routeClients.map(client => (
                             <ClientCard 
                                 key={client.id} 
@@ -587,7 +577,7 @@ export default function ClientesPage() {
             )}
         </div>
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                     <DialogTitle>Nova Cobrança para {selectedClient?.name}</DialogTitle>
                     <DialogDescription>
@@ -595,8 +585,8 @@ export default function ClientesPage() {
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             <FormField
                                 control={form.control}
                                 name="scratchedAmount"
@@ -627,12 +617,12 @@ export default function ClientesPage() {
                         
                         <Separator/>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             <FormField
                                 control={form.control}
                                 name="kitStatus"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-3">
+                                    <FormItem className="space-y-2">
                                         <FormLabel>Kit</FormLabel>
                                         <FormControl>
                                             <RadioGroup
@@ -640,13 +630,13 @@ export default function ClientesPage() {
                                                 defaultValue={field.value}
                                                 className="flex flex-col space-y-1"
                                             >
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal">Manteve kit</FormLabel>
+                                                    <FormLabel className="font-normal text-xs sm:text-sm">Manteve kit</FormLabel>
                                                 </FormItem>
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="novo" /></FormControl>
-                                                    <FormLabel className="font-normal">Novo kit</FormLabel>
+                                                    <FormLabel className="font-normal text-xs sm:text-sm">Novo kit</FormLabel>
                                                 </FormItem>
                                             </RadioGroup>
                                         </FormControl>
@@ -658,7 +648,7 @@ export default function ClientesPage() {
                                 control={form.control}
                                 name="cartelaStatus"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-3">
+                                    <FormItem className="space-y-2">
                                         <FormLabel>Cartela</FormLabel>
                                         <FormControl>
                                             <RadioGroup
@@ -666,13 +656,13 @@ export default function ClientesPage() {
                                                 defaultValue={field.value}
                                                 className="flex flex-col space-y-1"
                                             >
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal">Manteve cartela</FormLabel>
+                                                    <FormLabel className="font-normal text-xs sm:text-sm">Manteve cartela</FormLabel>
                                                 </FormItem>
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="nova" /></FormControl>
-                                                    <FormLabel className="font-normal">Nova cartela</FormLabel>
+                                                    <FormLabel className="font-normal text-xs sm:text-sm">Nova cartela</FormLabel>
                                                 </FormItem>
                                             </RadioGroup>
                                         </FormControl>
@@ -684,101 +674,100 @@ export default function ClientesPage() {
 
                         <Separator/>
                         
-                        <div className="space-y-4">
-                            <h4 className="font-medium">Prêmios que saíram</h4>
-                            <div className="space-y-2">
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm">Prêmios que saíram</h4>
+                            <div className="space-y-1.5">
                                 {prizesForCharge.map(p => (
-                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
-                                        <span>{p.prizeName} <span className="text-muted-foreground">x{p.quantity}</span></span>
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
-                                            <X className="h-4 w-4"/>
+                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-xs">
+                                        <span>{p.prizeName} <span className="text-muted-foreground ml-1">x{p.quantity}</span></span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
+                                            <X className="h-3.5 w-3.5"/>
                                         </Button>
                                     </div>
                                 ))}
-                                {prizesForCharge.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Nenhum prêmio adicionado.</p>}
+                                {prizesForCharge.length === 0 && <p className="text-[10px] text-muted-foreground text-center py-1">Nenhum prêmio adicionado.</p>}
                             </div>
                             <div className="flex gap-2 items-end">
                                 <FormItem className="flex-1">
-                                    <FormLabel>Prêmio</FormLabel>
+                                    <FormLabel className="text-xs">Prêmio</FormLabel>
                                     <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecione um prêmio" />
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue placeholder="Selecione" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             {prizes?.filter(p => p.quantity > 0).map(prize => (
                                                 <SelectItem key={prize.id} value={prize.id!}>
-                                                    <div className="flex justify-between items-center w-full gap-4">
-                                                        <span className="truncate text-xs">{prize.name}</span>
-                                                        <span className="text-muted-foreground text-[10px] flex-shrink-0">Est: {prize.quantity}</span>
+                                                    <div className="flex justify-between items-center w-full min-w-[180px]">
+                                                        <span className="truncate text-xs mr-4">{prize.name}</span>
+                                                        <span className="text-muted-foreground text-[10px] flex-shrink-0 bg-muted px-1.5 py-0.5 rounded">Est: {prize.quantity}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </FormItem>
-                                <FormItem className="w-16">
-                                    <FormLabel>Qtd.</FormLabel>
-                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="px-1" />
+                                <FormItem className="w-14">
+                                    <FormLabel className="text-xs">Qtd.</FormLabel>
+                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="h-9 px-1.5" />
                                 </FormItem>
-                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="mb-0.5">Add</Button>
+                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="h-9">Add</Button>
                             </div>
                         </div>
                         
                         <Separator/>
 
-                        <div className="space-y-4">
-                            <h4 className="font-medium">Fotos da Cartela</h4>
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-sm">Fotos da Cartela <span className="text-[10px] text-muted-foreground font-normal ml-1">(Opcional)</span></h4>
                             {isCameraOpen ? (
-                                <div className="space-y-4 p-4 border rounded-md">
-                                    <h5 className="font-semibold text-center">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
+                                <div className="space-y-3 p-3 border rounded-md">
+                                    <h5 className="font-semibold text-center text-xs">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
                                     {hasCameraPermission === false && (
-                                        <Alert variant="destructive">
-                                            <AlertTitle>Acesso à Câmera Necessário</AlertTitle>
-                                            <AlertDescription>
-                                                Por favor, permita o acesso à câmera para tirar a foto.
+                                        <Alert variant="destructive" className="p-2">
+                                            <AlertDescription className="text-xs">
+                                                Permita o acesso à câmera nas configurações.
                                             </AlertDescription>
                                         </Alert>
                                     )}
                                     <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                     <div className="flex gap-2 justify-center">
-                                        <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
-                                            <Camera className="mr-2 h-4 w-4" />
+                                        <Button type="button" size="sm" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
+                                            <Camera className="mr-2 h-3.5 w-3.5" />
                                             Tirar Foto
                                         </Button>
-                                        <Button type="button" variant="outline" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <FormLabel className="text-xs">Frente <span className="text-muted-foreground">(Opcional)</span></FormLabel>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <FormLabel className="text-[10px]">Frente</FormLabel>
                                         {frontImage ? (
-                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                                <Image src={frontImage} alt="Frente da cartela" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setFrontImage(null); form.setValue('frontCardImageUrl', undefined); }}>
-                                                    <X className="h-4 w-4"/>
+                                            <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                                                <Image src={frontImage} alt="Frente" fill className="object-cover" />
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-0.5 right-0.5 h-6 w-6" onClick={() => { setFrontImage(null); form.setValue('frontCardImageUrl', undefined); }}>
+                                                    <X className="h-3.5 w-3.5"/>
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1 text-[10px]" onClick={() => openCamera('front')}>
-                                                <Camera className="h-4 w-4" /> Adicionar Foto
+                                            <Button type="button" variant="outline" className="w-full h-14 flex-col gap-1 text-[10px]" onClick={() => openCamera('front')}>
+                                                <Camera className="h-4 w-4" /> Foto Frente
                                             </Button>
                                         )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <FormLabel className="text-xs">Verso <span className="text-muted-foreground">(Opcional)</span></FormLabel>
+                                    <div className="space-y-1.5">
+                                        <FormLabel className="text-[10px]">Verso</FormLabel>
                                         {backImage ? (
-                                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                                <Image src={backImage} alt="Verso da cartela" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => { setBackImage(null); form.setValue('backCardImageUrl', undefined); }}>
-                                                    <X className="h-4 w-4"/>
+                                            <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                                                <Image src={backImage} alt="Verso" fill className="object-cover" />
+                                                <Button type="button" variant="destructive" size="icon" className="absolute top-0.5 right-0.5 h-6 w-6" onClick={() => { setBackImage(null); form.setValue('backCardImageUrl', undefined); }}>
+                                                    <X className="h-3.5 w-3.5"/>
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1 text-[10px]" onClick={() => openCamera('back')}>
-                                                <Camera className="h-4 w-4" /> Adicionar Foto
+                                            <Button type="button" variant="outline" className="w-full h-14 flex-col gap-1 text-[10px]" onClick={() => openCamera('back')}>
+                                                <Camera className="h-4 w-4" /> Foto Verso
                                             </Button>
                                         )}
                                     </div>
@@ -787,9 +776,9 @@ export default function ClientesPage() {
                         </div>
 
                         {scratchedAmount > 0 && selectedClient && (
-                            <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
-                                <h4 className="font-semibold text-center">Resumo da Cobrança</h4>
-                                <div className="space-y-2 text-sm">
+                            <div className="space-y-2 rounded-lg border bg-muted/50 p-3 sm:p-4">
+                                <h4 className="font-semibold text-center text-xs sm:text-sm">Resumo da Cobrança</h4>
+                                <div className="space-y-1.5 text-xs">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Total Bruto</span>
                                         <span>{formatCurrency(chargeCalculations.grossRevenue)}</span>
@@ -805,15 +794,15 @@ export default function ClientesPage() {
                                     </div>
                                     )}
                                 </div>
-                                <Separator />
-                                <div className="flex justify-between items-center text-base font-bold">
-                                    <span className="text-xs">Líquido Empresa</span>
-                                    <span className="text-primary">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
+                                <Separator className="my-1.5" />
+                                <div className="flex justify-between items-center font-bold">
+                                    <span className="text-[10px] uppercase">Líquido Empresa</span>
+                                    <span className="text-primary text-sm sm:text-base">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
                                 </div>
                             </div>
                         )}
 
-                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full">
+                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-11 sm:h-10">
                             {isSubmittingCharge && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Salvar Cobrança
                         </Button>
@@ -822,19 +811,18 @@ export default function ClientesPage() {
             </DialogContent>
         </Dialog>
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="w-[90vw] rounded-lg">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogDescription className="text-xs sm:text-sm">
                         Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
-                        <span className="font-bold"> {clientToDelete?.name} </span>
-                        e todos os seus data associados.
+                        <span className="font-bold"> {clientToDelete?.name} </span>.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                    <AlertDialogCancel onClick={() => setClientToDelete(null)} className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
                     <AlertDialogAction
-                        className={buttonVariants({ variant: "destructive" })}
+                        className={cn(buttonVariants({ variant: "destructive" }), "w-full sm:w-auto")}
                         onClick={handleConfirmDelete}
                     >
                         Excluir

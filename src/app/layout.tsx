@@ -8,6 +8,7 @@ import FirebaseErrorListener from '@/components/firebase-error-listener';
 export const metadata: Metadata = {
   title: 'MRD Brindes',
   description: 'Gerenciamento e cobranças de raspinhas da sorte',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -30,6 +31,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <meta name="theme-color" content="#3B82F6" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin=""/>
       </head>
       <body className="font-body antialiased">
