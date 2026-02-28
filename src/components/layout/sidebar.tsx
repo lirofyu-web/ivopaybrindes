@@ -63,7 +63,7 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <div className="px-2">
-          <SidebarMenu className="p-2 gap-1.5 bg-red-600 rounded-lg shadow-inner">
+          <SidebarMenu className="p-2 gap-1.5 bg-slate-950 rounded-lg shadow-inner">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.label}>
                 <Link href={item.href} passHref legacyBehavior>
