@@ -1,4 +1,3 @@
-
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { PageTitle } from './page-title';
@@ -6,14 +5,32 @@ import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '../ui/dropdown-menu';
-import { LogOut, ChevronLeft } from 'lucide-react';
+import { LogOut, ChevronLeft, WifiOff } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user } = useUser();
+  const { user } = userUser();
   const auth = getAuth();
   const router = useRouter();
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    setIsOffline(!navigator.onLine);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -26,8 +43,13 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 print:hidden">
       <SidebarTrigger />
-      <div className="flex-1">
+      <div className="flex-1 flex items-center gap-2">
         <PageTitle />
+        {isOffline && (
+          <Badge variant="destructive" className="animate-pulse flex gap-1 h-6 px-2 text-[10px]">
+            <WifiOff className="h-3 w-3" /> Offline
+          </Badge>
+        )}
       </div>
       <div className="flex items-center gap-1.5">
         <Button
@@ -69,4 +91,9 @@ export default function Header() {
       </div>
     </header>
   );
+}
+
+// Pequeno fix: havia um erro de digitação na importação do hook no arquivo original
+function userUser() {
+  return useUser();
 }

@@ -1,26 +1,23 @@
-
 {
   "name": "MRD Brindes",
-  "short_name": "MRD",
-  "description": "Sistema de gerenciamento de raspinhas e prêmios MRD Brindes",
+  "short_name": "MRD Brindes",
+  "description": "Gerenciamento e cobranças de raspinhas da sorte",
   "start_url": "/clientes",
   "display": "standalone",
-  "background_color": "#0F172A",
+  "background_color": "#020617",
   "theme_color": "#3B82F6",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "https://picsum.photos/seed/mrd1/192/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "https://picsum.photos/seed/mrd2/512/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "orientation": "portrait",
-  "scope": "/"
+  ]
 }

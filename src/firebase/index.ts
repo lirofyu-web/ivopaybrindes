@@ -1,7 +1,7 @@
 'use client';
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, type Firestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
 // Hooks
@@ -31,9 +31,9 @@ async function initializeFirebase() {
     firestore = getFirestore(firebaseApp);
   }
 
-  if (!persistenceEnabled) {
+  if (!persistenceEnabled && typeof window !== 'undefined') {
       try {
-        await enableIndexedDbPersistence(firestore)
+        await enableMultiTabIndexedDbPersistence(firestore);
         persistenceEnabled = true;
       } catch (err: any) {
         if (err.code == 'failed-precondition') {
