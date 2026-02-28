@@ -49,7 +49,7 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
 // --- Charge Form Schema ---
 const chargeFormSchema = z.object({
   scratchedAmount: z.coerce.number().min(1, 'A quantidade deve ser pelo menos 1.'),
-  discount: z.coerce.number().optional(),
+  discount: z.coerce.number().optional().default(0),
   kitStatus: z.enum(['manteve', 'novo']).optional(),
   cartelaStatus: z.enum(['manteve', 'nova']).optional(),
   prizesGiven: z.array(z.object({
@@ -392,7 +392,7 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Prepare the document data, filtering out undefined values to avoid Firestore errors
+    // Prepare a clean object for Firestore (Firebase doesn't like 'undefined' values)
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -407,40 +407,26 @@ export default function ClientesPage() {
         discount: values.discount || 0,
     };
     
+    // Add optional fields only if they have values
     if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
     if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
     if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
     if (values.backCardImageUrl) chargeData.backCardImageUrl = values.backCardImageUrl;
-    if (prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
+    if (prizesForCharge && prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
     
     try {
-      // Get a new doc ID upfront
+      // Create document reference manually to get ID before setting
       const newChargeRef = doc(collection(firestore, 'cobrancas'));
       const chargeId = newChargeRef.id;
 
-      // Initiate the writes without awaiting
-      setDoc(newChargeRef, chargeData)
-        .catch(async (error) => {
-            const permissionError = new FirestorePermissionError({
-                path: newChargeRef.path,
-                operation: 'create',
-                requestResourceData: chargeData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
+      // Start saving process without blocking the entire UI wait
+      await setDoc(newChargeRef, chargeData);
       
-      // Update prize stock
+      // Update prize stock for each prize given
       for (const prizeGiven of prizesForCharge) {
         const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
-        updateDoc(prizeDocRef, {
+        await updateDoc(prizeDocRef, {
             quantity: increment(-prizeGiven.quantity)
-        }).catch(async (error) => {
-            const permissionError = new FirestorePermissionError({
-                path: prizeDocRef.path,
-                operation: 'update',
-                requestResourceData: { quantity: increment(-prizeGiven.quantity) },
-            });
-            errorEmitter.emit('permission-error', permissionError);
         });
       }
 
@@ -449,20 +435,25 @@ export default function ClientesPage() {
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
       });
       
-      // Proceed with printing immediately using the ID we generated
+      // Open receipt for printing
       handlePrintReceipt({ ...chargeData, id: chargeId });
 
+      // Reset state and close
+      handleChargeDialogClose(false);
+      form.reset();
+      setPrizesForCharge([]);
+      setFrontImage(null);
+      setBackImage(null);
+
     } catch (error: any) {
+      console.error("Error saving charge:", error);
       toast({
-        title: 'Erro!',
-        description: 'Não foi possível salvar a cobrança.',
+        title: 'Erro ao Salvar!',
+        description: error.message || 'Não foi possível salvar a cobrança. Verifique sua conexão e tente novamente.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmittingCharge(false);
-      handleChargeDialogClose(false);
-      setFrontImage(null);
-      setBackImage(null);
     }
   };
 
