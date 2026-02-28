@@ -2,6 +2,34 @@
 
 Este é um sistema PWA (Progressive Web App) desenvolvido para gerenciamento de clientes, rotas, prêmios e cobranças de raspinhas.
 
+## Como subir para o seu GitHub
+
+Para enviar este projeto para o repositório que você criou, siga estes passos no seu terminal local:
+
+1. **Baixe os arquivos** do projeto para o seu computador.
+2. **Abra o terminal** na pasta do projeto.
+3. **Execute os comandos abaixo**:
+
+```bash
+# Inicie o repositório local
+git init
+
+# Adicione os arquivos
+git add .
+
+# Faça o primeiro commit
+git commit -m "Initial commit - MRD Brindes System"
+
+# Configure a branch principal
+git branch -M main
+
+# Conecte ao seu repositório remoto
+git remote add origin https://github.com/lirofyu-web/studio.git
+
+# Envie os arquivos (será solicitado seu usuário e senha/token do GitHub)
+git push -u origin main
+```
+
 ## Principais Funcionalidades
 
 - **Gestão de Clientes**: Cadastro completo com localização GPS e integração direta com WhatsApp.
@@ -11,16 +39,6 @@ Este é um sistema PWA (Progressive Web App) desenvolvido para gerenciamento de 
 - **Relatórios**: Histórico de cobranças e despesas com filtros por rota e data.
 - **Modo PWA**: Instalável em dispositivos móveis com suporte a tela cheia.
 - **Animações de Sucesso**: Feedback visual em todas as operações de salvamento.
-
-## Como subir para o seu GitHub
-
-Como este ambiente é um protótipo, você pode baixar os arquivos e usar os comandos abaixo no seu terminal local:
-
-1. Inicie o repositório: `git init`
-2. Adicione os arquivos: `git add .`
-3. Faça o primeiro commit: `git commit -m "Initial commit - MRD Brindes System"`
-4. Conecte ao seu repositório remoto: `git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git`
-5. Envie os arquivos: `git push -u origin main`
 
 ## Tecnologias Utilizadas
 
