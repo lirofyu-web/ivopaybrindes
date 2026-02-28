@@ -1,3 +1,4 @@
+
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { PageTitle } from './page-title';
@@ -12,7 +13,7 @@ import { useState, useEffect } from 'react';
 import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user } = userUser();
+  const { user } = useUser();
   const auth = getAuth();
   const router = useRouter();
   const [isOffline, setIsOffline] = useState(false);
@@ -21,10 +22,11 @@ export default function Header() {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
-    setIsOffline(!navigator.onLine);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    if (typeof navigator !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -46,7 +48,7 @@ export default function Header() {
       <div className="flex-1 flex items-center gap-2">
         <PageTitle />
         {isOffline && (
-          <Badge variant="destructive" className="animate-pulse flex gap-1 h-6 px-2 text-[10px]">
+          <Badge variant="destructive" className="animate-pulse flex gap-1 h-6 px-2 text-[10px] items-center">
             <WifiOff className="h-3 w-3" /> Offline
           </Badge>
         )}
@@ -91,9 +93,4 @@ export default function Header() {
       </div>
     </header>
   );
-}
-
-// Pequeno fix: havia um erro de digitação na importação do hook no arquivo original
-function userUser() {
-  return useUser();
 }
