@@ -1,4 +1,3 @@
-
 'use client'
 import Link from 'next/link';
 import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
@@ -270,7 +269,7 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Limpar valores indefinidos para o Firestore não rejeitar
+    // Preparar dados e limpar campos undefined para o Firestore
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -283,13 +282,15 @@ export default function ClientesPage() {
         commissionValue: chargeCalculations.commissionValue,
         netRevenue: chargeCalculations.finalNetRevenue,
         discount: values.discount || 0,
+        kitStatus: values.kitStatus || null,
+        cartelaStatus: values.cartelaStatus || null,
+        frontCardImageUrl: values.frontCardImageUrl || null,
+        backCardImageUrl: values.backCardImageUrl || null,
+        prizesGiven: prizesForCharge.length > 0 ? prizesForCharge : null,
     };
     
-    if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
-    if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
-    if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
-    if (values.backCardImageUrl) chargeData.backCardImageUrl = values.backCardImageUrl;
-    if (prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
+    // Limpeza final para não enviar campos nulos/undefined indesejados
+    Object.keys(chargeData).forEach(key => (chargeData[key] === null || chargeData[key] === undefined) && delete chargeData[key]);
     
     try {
       const newRef = doc(collection(firestore, 'cobrancas'));
@@ -410,7 +411,7 @@ export default function ClientesPage() {
                             <FormField control={form.control} name="kitStatus" render={({ field }) => (
                                 <FormItem className="space-y-1">
                                     <FormLabel className="text-[11px]">Kit Brindes</FormLabel>
-                                    <RadioGroup onValueChange={field.onChange} className="flex flex-col gap-1.5">
+                                    <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col gap-1.5">
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="manteve" id="k-m"/><label htmlFor="k-m" className="text-xs">Manteve</label></div>
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="novo" id="k-n"/><label htmlFor="k-n" className="text-xs">Novo</label></div>
                                     </RadioGroup>
@@ -419,7 +420,7 @@ export default function ClientesPage() {
                             <FormField control={form.control} name="cartelaStatus" render={({ field }) => (
                                 <FormItem className="space-y-1">
                                     <FormLabel className="text-[11px]">Cartela</FormLabel>
-                                    <RadioGroup onValueChange={field.onChange} className="flex flex-col gap-1.5">
+                                    <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col gap-1.5">
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="manteve" id="c-m"/><label htmlFor="c-m" className="text-xs">Manteve</label></div>
                                         <div className="flex items-center space-x-2"><RadioGroupItem value="nova" id="c-n"/><label htmlFor="c-n" className="text-xs">Nova</label></div>
                                     </RadioGroup>

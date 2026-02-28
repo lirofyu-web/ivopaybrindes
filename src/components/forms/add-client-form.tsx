@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -84,6 +83,9 @@ export function AddClientForm({ client }: { client?: Client }) {
     };
 
     if (!client) clientData.createdAt = new Date();
+    
+    // Limpeza de campos nulos ou indefinidos para evitar erros no Firestore
+    Object.keys(clientData).forEach(key => (clientData[key] === undefined || clientData[key] === null) && delete clientData[key]);
     if (!values.location) delete clientData.location;
     if (!values.prizes || values.prizes.length === 0) delete clientData.prizes;
     

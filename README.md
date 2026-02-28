@@ -2,26 +2,29 @@
 
 Sistema mobile-first para gerenciamento de clientes, rotas, prêmios e cobranças de raspinhas.
 
-## Como subir para o seu GitHub
+## Como conectar ao GitHub e finalizar o projeto
 
-Siga estes passos exatos no seu terminal local para conectar o projeto ao seu repositório:
+Para subir este código para o seu repositório oficial, siga estes passos exatos no seu terminal local:
 
-1. **Abra o terminal** na pasta do projeto.
-2. **Execute os comandos**:
+1. **Abra o terminal** na pasta onde você baixou o projeto.
+2. **Execute a sequência de comandos**:
 
 ```bash
 git init
 git add .
-git commit -m "Final version - Mobile Optimized with Success Animations"
+git commit -m "Versão Final - Otimizada para Mobile com IA e Animações"
 git branch -M main
 git remote add origin https://github.com/lirofyu-web/studio.git
 git push -u origin main
 ```
 
-## Destaques do App
+## Destaques do Aplicativo
 
-- **Assistente IA**: Converse com o Gemini sobre seus clientes e vendas.
-- **Relatórios de Campo**: Imprima roteiros de viagem direto do mapa com campos de checklist.
-- **PWA Ready**: Instale no celular via Chrome (Android) ou Safari (iOS).
-- **Offline First**: Sincronização automática com Firebase.
-- **Feedback Visual**: Animações de sucesso em todas as operações de salvamento.
+- **Assistente IA (Gemini)**: Converse com a inteligência artificial sobre seus dados de clientes e vendas diretamente no menu.
+- **Relatórios de Campo**: No Mapa, utilize o botão "Imprimir Viagem" para gerar roteiros com campos de checklist.
+- **PWA Instalável**: Funciona como um aplicativo nativo no Android (Chrome) e iOS (Safari).
+- **Animações de Sucesso**: Feedback visual instantâneo em cada operação de salvamento.
+- **Offline Sync**: Sincronização automática com Firebase Firestore.
+
+---
+© 2024 MRD Brindes - Tecnologia para o campo.
