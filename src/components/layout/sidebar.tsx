@@ -11,7 +11,6 @@ import {
   TrendingDown,
   Settings,
   Users,
-  Sparkles,
 } from 'lucide-react';
 
 import {
@@ -31,7 +30,6 @@ const navItems = [
   { href: '/mapa', label: 'Mapa', icon: MapIcon, className: 'text-green-400' },
   { href: '/premios', label: 'Prêmios', icon: Gift, className: 'text-rose-400' },
   { href: '/cobranca', label: 'Cobrança', icon: DollarSign, className: 'text-emerald-400' },
-  { href: '/ai-assistant', label: 'Assistente IA', icon: Sparkles, className: 'text-amber-400' },
   { href: '/relatorios', label: 'Relatórios', icon: BarChart, className: 'text-orange-400' },
   { href: '/despesas', label: 'Despesas', icon: TrendingDown, className: 'text-purple-400' },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
