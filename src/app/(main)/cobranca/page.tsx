@@ -42,7 +42,7 @@ export default function CobrancaPage() {
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [cobrancaToDelete, setCobrancaToDelete] = useState<Cobranca | null>(null);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [viewingPhotos, setViewingPhotos] = useState<Cobranca | null>(null);
 
     const isLoading = isLoadingCobrancas || isLoadingRoutes;
 
@@ -237,7 +237,7 @@ export default function CobrancaPage() {
                                 </div>
                                 <div className="flex gap-1 flex-shrink-0">
                                     {(cobranca.frontCardImageUrl || cobranca.backCardImageUrl) && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-muted/50" onClick={() => setPreviewImage(cobranca.frontCardImageUrl || cobranca.backCardImageUrl!)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-primary/10 text-primary" onClick={() => setViewingPhotos(cobranca)}>
                                             <Camera className="h-4 w-4" />
                                         </Button>
                                     )}
@@ -339,6 +339,9 @@ export default function CobrancaPage() {
                                 <TableCell className="text-right font-bold text-primary">{formatCurrency(c.netRevenue)}</TableCell>
                                 <TableCell className="text-right actions-col">
                                     <div className="flex justify-end gap-1">
+                                        {(c.frontCardImageUrl || c.backCardImageUrl) && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setViewingPhotos(c)}><Camera className="h-4 w-4" /></Button>
+                                        )}
                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePrintReceipt(c)}><Printer className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteRequest(c)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
@@ -371,14 +374,33 @@ export default function CobrancaPage() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-            <DialogContent className="max-w-3xl w-[95vw] p-2 rounded-lg">
-                <DialogHeader className="p-2"><DialogTitle>Foto da Cartela</DialogTitle></DialogHeader>
-                {previewImage && (
-                    <div className="relative aspect-[4/3] w-full">
-                        <Image src={previewImage} alt="Foto" fill className="object-contain rounded-md" />
+        <Dialog open={!!viewingPhotos} onOpenChange={(open) => !open && setViewingPhotos(null)}>
+            <DialogContent className="max-w-4xl w-[95vw] p-4 rounded-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="mb-4">
+                    <DialogTitle>Fotos da Cartela - {viewingPhotos?.clientName}</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold uppercase text-muted-foreground text-center">Frente</p>
+                        {viewingPhotos?.frontCardImageUrl ? (
+                            <div className="relative aspect-[4/3] w-full border rounded-md overflow-hidden bg-muted">
+                                <Image src={viewingPhotos.frontCardImageUrl} alt="Frente" fill className="object-contain" />
+                            </div>
+                        ) : (
+                            <div className="aspect-[4/3] flex items-center justify-center bg-muted rounded-md text-xs text-muted-foreground">Sem foto da frente</div>
+                        )}
                     </div>
-                )}
+                    <div className="space-y-2">
+                        <p className="text-xs font-bold uppercase text-muted-foreground text-center">Verso</p>
+                        {viewingPhotos?.backCardImageUrl ? (
+                            <div className="relative aspect-[4/3] w-full border rounded-md overflow-hidden bg-muted">
+                                <Image src={viewingPhotos.backCardImageUrl} alt="Verso" fill className="object-contain" />
+                            </div>
+                        ) : (
+                            <div className="aspect-[4/3] flex items-center justify-center bg-muted rounded-md text-xs text-muted-foreground">Sem foto do verso</div>
+                        )}
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     </div>
