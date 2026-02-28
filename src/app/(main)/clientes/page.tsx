@@ -37,17 +37,11 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
-      viewBox="0 0 48 48"
+      viewBox="0 0 24 24"
+      fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M44.5 24a20.5 20.5 0 1 1-41 0 20.5 20.5 0 1 1 41 0Z"
-        fill="#25d366"
-      />
-      <path
-        d="m34.2 13.7-1.5-1.5a14.7 14.7 0 0 0-21.4 3.1l-1.3 2.1.2 2.3 1 4.5 1 4.4-.3 1.4-2 6.1 5.9-1.9 1.6-.5h2.1a14.7 14.7 0 0 0 14.7-19.6Zm-7.7 14.1a1.2 1.2 0 0 1-.8.3h-1.5a1.8 1.8 0 0 1-.9-.2l-.4-.2a9.7 9.7 0 0 1-3.6-2.2 11.5 11.5 0 0 1-2.5-3.1 3.1 3.1 0 0 1-.6-1.5 1.5 1.5 0 0 1 .4-1.3c.2-.2.4-.4.6-.4s.3 0 .5.2l.4.4.2.3.4.5.3.4a.6.6 0 0 1 .1.4c0 .2 0 .4-.1.5l-.1.2-1.3 3c-.3.7-.4 1-.2 1.3s.4.5.8.7l.4.1h.4a4.4 4.4 0 0 0 1.5-.4l.3-.2.8-1.5c.2-.4.3-.8.5-1.1a.8.8 0 0 1 1-.5c.3 0 .6 0 1 .2l.3.2.2.3.2.4v.7a1.6 1.6 0 0 1-.4 1Z"
-        fill="#fff"
-      />
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.438 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.558 0 11.894-5.335 11.897-11.893a11.83 11.83 0 00-3.481-8.417z"/>
     </svg>
   );
 }
@@ -87,8 +81,8 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
                     <p>{client.route}</p>
                 </div>
             </div>
-            <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer">
-                <WhatsAppIcon className="w-6 h-6"/>
+            <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 transition-colors">
+                <WhatsAppIcon className="w-8 h-8"/>
                 <span className="sr-only">WhatsApp</span>
             </a>
         </div>
@@ -225,7 +219,7 @@ export default function ClientesPage() {
   const handleOpenChargeDialog = (client: Client) => {
     setSelectedClient(client);
     setIsChargeDialogOpen(true);
-    form.reset();
+    form.reset({ scratchedAmount: 0, discount: 0, prizesGiven: [] });
     setPrizesForCharge([]);
     setFrontImage(null);
     setBackImage(null);
@@ -398,7 +392,8 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    const newCharge: Omit<Cobranca, 'id'> = {
+    // Prepare the document data, filtering out undefined values to avoid Firestore errors
+    const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
         route: selectedClient.route,
@@ -410,12 +405,13 @@ export default function ClientesPage() {
         commissionValue: chargeCalculations.commissionValue,
         netRevenue: chargeCalculations.finalNetRevenue,
         discount: values.discount || 0,
-        kitStatus: values.kitStatus,
-        cartelaStatus: values.cartelaStatus,
-        prizesGiven: prizesForCharge,
-        frontCardImageUrl: values.frontCardImageUrl,
-        backCardImageUrl: values.backCardImageUrl,
     };
+    
+    if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
+    if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
+    if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
+    if (values.backCardImageUrl) chargeData.backCardImageUrl = values.backCardImageUrl;
+    if (prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
     
     try {
       // Get a new doc ID upfront
@@ -423,12 +419,12 @@ export default function ClientesPage() {
       const chargeId = newChargeRef.id;
 
       // Initiate the writes without awaiting
-      setDoc(newChargeRef, newCharge)
+      setDoc(newChargeRef, chargeData)
         .catch(async (error) => {
             const permissionError = new FirestorePermissionError({
                 path: newChargeRef.path,
                 operation: 'create',
-                requestResourceData: newCharge,
+                requestResourceData: chargeData,
             });
             errorEmitter.emit('permission-error', permissionError);
         });
@@ -454,7 +450,7 @@ export default function ClientesPage() {
       });
       
       // Proceed with printing immediately using the ID we generated
-      handlePrintReceipt({ ...newCharge, id: chargeId });
+      handlePrintReceipt({ ...chargeData, id: chargeId });
 
     } catch (error: any) {
       toast({
@@ -723,19 +719,19 @@ export default function ClientesPage() {
                                             {prizes?.filter(p => p.quantity > 0).map(prize => (
                                                 <SelectItem key={prize.id} value={prize.id!}>
                                                     <div className="flex justify-between items-center w-full gap-4">
-                                                        <span className="truncate">{prize.name}</span>
-                                                        <span className="text-muted-foreground text-xs flex-shrink-0">Estoque: {prize.quantity}</span>
+                                                        <span className="truncate text-xs">{prize.name}</span>
+                                                        <span className="text-muted-foreground text-[10px] flex-shrink-0">Est: {prize.quantity}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </FormItem>
-                                <FormItem className="w-24">
+                                <FormItem className="w-16">
                                     <FormLabel>Qtd.</FormLabel>
-                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} />
+                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="px-1" />
                                 </FormItem>
-                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd}>Adicionar</Button>
+                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="mb-0.5">Add</Button>
                             </div>
                         </div>
                         
@@ -754,7 +750,7 @@ export default function ClientesPage() {
                                             </AlertDescription>
                                         </Alert>
                                     )}
-                                    <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                                    <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                     <div className="flex gap-2 justify-center">
                                         <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
                                             <Camera className="mr-2 h-4 w-4" />
@@ -766,7 +762,7 @@ export default function ClientesPage() {
                             ) : (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <FormLabel>Frente <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
+                                        <FormLabel className="text-xs">Frente <span className="text-muted-foreground">(Opcional)</span></FormLabel>
                                         {frontImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={frontImage} alt="Frente da cartela" fill className="object-cover" />
@@ -775,13 +771,13 @@ export default function ClientesPage() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <Button type="button" variant="outline" className="w-full h-24" onClick={() => openCamera('front')}>
-                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Foto
+                                            <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1 text-[10px]" onClick={() => openCamera('front')}>
+                                                <Camera className="h-4 w-4" /> Adicionar Foto
                                             </Button>
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <FormLabel>Verso <span className="text-xs text-muted-foreground">(Opcional)</span></FormLabel>
+                                        <FormLabel className="text-xs">Verso <span className="text-muted-foreground">(Opcional)</span></FormLabel>
                                         {backImage ? (
                                             <div className="relative w-full aspect-video rounded-md overflow-hidden">
                                                 <Image src={backImage} alt="Verso da cartela" fill className="object-cover" />
@@ -790,8 +786,8 @@ export default function ClientesPage() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <Button type="button" variant="outline" className="w-full h-24" onClick={() => openCamera('back')}>
-                                                <Camera className="mr-2 h-5 w-5" /> Adicionar Foto
+                                            <Button type="button" variant="outline" className="w-full h-16 flex-col gap-1 text-[10px]" onClick={() => openCamera('back')}>
+                                                <Camera className="h-4 w-4" /> Adicionar Foto
                                             </Button>
                                         )}
                                     </div>
@@ -804,11 +800,11 @@ export default function ClientesPage() {
                                 <h4 className="font-semibold text-center">Resumo da Cobrança</h4>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Total Bruto ({scratchedAmount} x {formatCurrency(selectedClient.raspinha)})</span>
+                                        <span className="text-muted-foreground">Total Bruto</span>
                                         <span>{formatCurrency(chargeCalculations.grossRevenue)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Comissão do Cliente ({selectedClient.comissao}%)</span>
+                                        <span className="text-muted-foreground">Comissão ({selectedClient.comissao}%)</span>
                                         <span className="text-destructive">-{formatCurrency(chargeCalculations.commissionValue)}</span>
                                     </div>
                                     {discount > 0 && (
@@ -820,7 +816,7 @@ export default function ClientesPage() {
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between items-center text-base font-bold">
-                                    <span>Valor Líquido (para a empresa)</span>
+                                    <span className="text-xs">Líquido Empresa</span>
                                     <span className="text-primary">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
                                 </div>
                             </div>

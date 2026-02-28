@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { WithTimestamps } from '@/lib/types';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'updatedAt'> | null {
     if (!doc.exists()) {
@@ -38,8 +40,12 @@ export function useDoc<T>(path: string) {
                 setData(processDoc<T>(docSnapshot));
                 setIsLoading(false);
             },
-            (err) => {
-                console.error(`Error fetching doc ${path}:`, err);
+            async (err) => {
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'get',
+                });
+                errorEmitter.emit('permission-error', permissionError);
                 setError(err);
                 setIsLoading(false);
             }

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { WithTimestamps } from '@/lib/types';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'updatedAt'> {
     const data = doc.data() as any;
@@ -35,8 +37,12 @@ export function useCollection<T>(path: string) {
                 setData(docs);
                 setIsLoading(false);
             },
-            (err) => {
-                console.error(`Error fetching collection ${path}:`, err);
+            async (err) => {
+                const permissionError = new FirestorePermissionError({
+                    path: collectionRef.path,
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
                 setError(err);
                 setIsLoading(false);
             }
