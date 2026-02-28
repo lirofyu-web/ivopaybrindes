@@ -87,7 +87,7 @@ export default function PremiosPage() {
         if (isCameraOpen) {
             const getCameraPermission = async () => {
                 try {
-                // Utiliza explicitamente a câmera traseira (environment)
+                // Utiliza explicitamente a câmera traseira (environment) para melhor captura de prêmios
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });

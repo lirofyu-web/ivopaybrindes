@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
+import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
@@ -159,7 +159,7 @@ export default function ClientesPage() {
     const startCamera = async () => {
       if (isCameraOpen) {
         try {
-          // Utiliza explicitamente a câmera traseira (environment)
+          // Utiliza explicitamente a câmera traseira (environment) para todas as fotos da cartela
           stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment' } 
           });
@@ -272,7 +272,6 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Preparar dados e limpar campos undefined para o Firestore
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -292,7 +291,6 @@ export default function ClientesPage() {
         prizesGiven: prizesForCharge.length > 0 ? prizesForCharge : null,
     };
     
-    // Limpeza final para não enviar campos nulos/undefined indesejados
     Object.keys(chargeData).forEach(key => (chargeData[key] === null || chargeData[key] === undefined) && delete chargeData[key]);
     
     try {
