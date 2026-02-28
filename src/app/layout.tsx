@@ -3,12 +3,16 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
-import FirebaseErrorListener from '@/components/firebase-error-listener';
 
 export const metadata: Metadata = {
   title: 'MRD Brindes',
   description: 'Gerenciamento e cobranças de raspinhas da sorte',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'MRD Brindes',
+  },
 };
 
 export default function RootLayout({
