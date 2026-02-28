@@ -87,7 +87,10 @@ export default function PremiosPage() {
         if (isCameraOpen) {
             const getCameraPermission = async () => {
                 try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Utiliza explicitamente a câmera traseira (environment)
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                 }
@@ -275,7 +278,7 @@ export default function PremiosPage() {
                                                         </AlertDescription>
                                                     </Alert>
                                                 )}
-                                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+                                                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                                 <div className="flex gap-2 justify-center">
                                                     <Button type="button" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
                                                         <Camera className="mr-2 h-4 w-4" />

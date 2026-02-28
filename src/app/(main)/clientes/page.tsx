@@ -159,7 +159,10 @@ export default function ClientesPage() {
     const startCamera = async () => {
       if (isCameraOpen) {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          // Utiliza explicitamente a câmera traseira (environment)
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+          });
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
