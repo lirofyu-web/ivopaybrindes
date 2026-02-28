@@ -154,12 +154,12 @@ export function AddClientForm({ client }: { client?: Client }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField control={form.control} name="name" render={({ field }) => (
-            <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input className="h-11" {...field} /></FormControl><FormMessage/></FormItem>
+            <FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input className="h-11 text-base" {...field} /></FormControl><FormMessage/></FormItem>
         )}/>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Telefone</FormLabel><FormControl><Input type="tel" className="h-11" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Telefone</FormLabel><FormControl><Input type="tel" className="h-11 text-base" {...field} /></FormControl></FormItem>
             )}/>
             <FormField control={form.control} name="route" render={({ field }) => (
                 <FormItem><FormLabel>Rota</FormLabel>
@@ -171,19 +171,19 @@ export function AddClientForm({ client }: { client?: Client }) {
         </div>
 
         <FormField control={form.control} name="address" render={({ field }) => (
-            <FormItem><FormLabel>Endereço</FormLabel><FormControl><Input className="h-11" {...field} /></FormControl></FormItem>
+            <FormItem><FormLabel>Endereço</FormLabel><FormControl><Input className="h-11 text-base" {...field} /></FormControl></FormItem>
         )}/>
 
         <FormField control={form.control} name="city" render={({ field }) => (
-            <FormItem><FormLabel>Cidade / Estado</FormLabel><FormControl><Input className="h-11" {...field} /></FormControl></FormItem>
+            <FormItem><FormLabel>Cidade / Estado</FormLabel><FormControl><Input className="h-11 text-base" {...field} /></FormControl></FormItem>
         )}/>
 
         <div className="grid grid-cols-2 gap-4">
             <FormField control={form.control} name="raspinha" render={({ field }) => (
-                <FormItem><FormLabel>Raspinha (R$)</FormLabel><FormControl><Input type="number" step="0.01" className="h-11" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Raspinha (R$)</FormLabel><FormControl><Input type="number" step="0.01" className="h-11 text-base" {...field} /></FormControl></FormItem>
             )}/>
             <FormField control={form.control} name="comissao" render={({ field }) => (
-                <FormItem><FormLabel>Comissão (%)</FormLabel><FormControl><Input type="number" className="h-11" {...field} /></FormControl></FormItem>
+                <FormItem><FormLabel>Comissão (%)</FormLabel><FormControl><Input type="number" className="h-11 text-base" {...field} /></FormControl></FormItem>
             )}/>
         </div>
 
@@ -210,7 +210,7 @@ export function AddClientForm({ client }: { client?: Client }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-lg bg-muted/20">
                 <Select onValueChange={(id) => setSelectedPrizeForAdd(prizes?.find(p => p.id === id) || null)} value={selectedPrizeForAdd?.id || ''}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Escolher Item"/></SelectTrigger>
+                    <SelectTrigger className="h-10 text-xs"><SelectValue placeholder="Escolher Item"/></SelectTrigger>
                     <SelectContent>{prizes?.map(p => <SelectItem key={p.id} value={p.id!}>{p.name}</SelectItem>)}</SelectContent>
                 </Select>
                 <div className="flex gap-2">
