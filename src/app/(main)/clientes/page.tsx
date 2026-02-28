@@ -1,3 +1,4 @@
+
 'use client'
 import Link from 'next/link';
 import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera } from 'lucide-react';
@@ -23,23 +24,16 @@ import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
-
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// --- WhatsApp Icon ---
 function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg
-      {...props}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg {...props} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="12" fill="#25D366"/>
         <path fill="#FFF" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.438 9.884-9.885 9.884"/>
     </svg>
@@ -59,7 +53,6 @@ const chargeFormSchema = z.object({
   frontCardImageUrl: z.string().optional(),
   backCardImageUrl: z.string().optional(),
 });
-
 
 function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
@@ -150,8 +143,6 @@ export default function ClientesPage() {
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [backImage, setBackImage] = useState<string | null>(null);
 
-  const isLoading = isLoadingClients || isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes;
-
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
     defaultValues: { scratchedAmount: 0, discount: 0, prizesGiven: [] },
@@ -160,40 +151,35 @@ export default function ClientesPage() {
   const scratchedAmount = form.watch('scratchedAmount');
   const discount = form.watch('discount') || 0;
 
-    useEffect(() => {
-        setCurrentDate(new Date());
-    }, []);
+  useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
 
-    useEffect(() => {
-        let stream: MediaStream | null = null;
-        const getCameraPermission = async () => {
-            if (isCameraOpen) {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    if (videoRef.current) {
-                        videoRef.current.srcObject = stream;
-                    }
-                    setHasCameraPermission(true);
-                } catch (error) {
-                    console.error('Error accessing camera:', error);
-                    setHasCameraPermission(false);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Acesso à Câmera Negado',
-                        description: 'Por favor, habilite a permissão da câmera.',
-                    });
-                    setIsCameraOpen(false); 
-                }
-            }
-        };
-        getCameraPermission();
-
-        return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        };
-    }, [isCameraOpen, toast]);
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const startCamera = async () => {
+      if (isCameraOpen) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+          setHasCameraPermission(true);
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          setIsCameraOpen(false);
+          toast({ variant: 'destructive', title: 'Erro de Câmera', description: 'Permita o acesso à câmera.' });
+        }
+      }
+    };
+    startCamera();
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isCameraOpen, toast]);
 
   const chargeCalculations = useMemo(() => {
     if (!selectedClient || !scratchedAmount) {
@@ -206,7 +192,6 @@ export default function ClientesPage() {
     return { grossRevenue, commissionValue, netRevenue, finalNetRevenue };
   }, [selectedClient, scratchedAmount, discount]);
 
-
   const handleOpenChargeDialog = (client: Client) => {
     setSelectedClient(client);
     setIsChargeDialogOpen(true);
@@ -215,7 +200,6 @@ export default function ClientesPage() {
     setFrontImage(null);
     setBackImage(null);
     setIsCameraOpen(false);
-    setHasCameraPermission(null);
   };
 
   const handleChargeDialogClose = (open: boolean) => {
@@ -233,15 +217,10 @@ export default function ClientesPage() {
 
   const handleConfirmDelete = async () => {
     if (!clientToDelete || !firestore) return;
-    
     try {
       await deleteDoc(doc(firestore, 'clients', clientToDelete.id!));
       triggerSuccess();
-      toast({
-        title: 'Cliente Excluído!',
-        description: `O cliente "${clientToDelete.name}" foi removido.`,
-        variant: 'destructive'
-      });
+      toast({ title: 'Cliente Excluído!', description: `Sucesso para ${clientToDelete.name}` });
     } catch (error) {
       console.error("Error deleting client:", error);
     }
@@ -253,77 +232,45 @@ export default function ClientesPage() {
     if (!selectedPrizeForAdd || prizeQuantity <= 0) return;
     const availableStock = prizes?.find(p => p.id === selectedPrizeForAdd.id)?.quantity ?? 0;
     if (prizeQuantity > availableStock) {
-        toast({
-            variant: 'destructive',
-            title: 'Estoque Insuficiente',
-            description: `Apenas ${availableStock} em estoque.`
-        });
+        toast({ variant: 'destructive', title: 'Sem Estoque', description: `Apenas ${availableStock} disponíveis.` });
         return;
     }
-    const newPrizeEntry = { prizeId: selectedPrizeForAdd.id!, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
-    setPrizesForCharge(prev => {
-        const existingPrizeIndex = prev.findIndex(p => p.prizeId === newPrizeEntry.prizeId);
-        let updatedPrizes;
-        if (existingPrizeIndex > -1) {
-            updatedPrizes = [...prev];
-            updatedPrizes[existingPrizeIndex].quantity += newPrizeEntry.quantity;
-        } else {
-            updatedPrizes = [...prev, newPrizeEntry];
-        }
-        form.setValue('prizesGiven', updatedPrizes);
-        return updatedPrizes;
-    });
+    const updated = [...prizesForCharge];
+    const idx = updated.findIndex(p => p.prizeId === selectedPrizeForAdd.id);
+    if (idx > -1) {
+        updated[idx].quantity += prizeQuantity;
+    } else {
+        updated.push({ prizeId: selectedPrizeForAdd.id!, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity });
+    }
+    setPrizesForCharge(updated);
+    form.setValue('prizesGiven', updated);
     setSelectedPrizeForAdd(null);
     setPrizeQuantity(1);
   };
 
-  const handlePrintReceipt = (cobranca: Cobranca) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-        toast({
-            variant: 'destructive',
-            title: 'Erro ao imprimir',
-            description: 'Habilite pop-ups para o recibo.',
-        });
-        return;
+  const handleTakePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    const dataUri = canvas.toDataURL('image/jpeg', 0.8);
+    if (cameraFor === 'front') {
+        setFrontImage(dataUri);
+        form.setValue('frontCardImageUrl', dataUri);
+    } else {
+        setBackImage(dataUri);
+        form.setValue('backCardImageUrl', dataUri);
     }
-    const receiptHtml = ReactDOMServer.renderToString(<Receipt cobranca={cobranca} />);
-    const pageStyles = document.head.innerHTML;
-    printWindow.document.write(`<html><head><title>Recibo</title>${pageStyles}<style>@media print {@page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } } body { width: 80mm; margin: 0; padding: 0; background: white; }</style></head><body class="light">${receiptHtml}</body></html>`);
-    printWindow.document.close();
-    setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-    }, 500);
+    setIsCameraOpen(false);
   };
-
-    const handleTakePhoto = () => {
-        if (!videoRef.current || !canvasRef.current) return;
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        if (context) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const dataUri = canvas.toDataURL('image/jpeg', 0.8);
-            if (cameraFor === 'front') {
-                setFrontImage(dataUri);
-                form.setValue('frontCardImageUrl', dataUri);
-            } else if (cameraFor === 'back') {
-                setBackImage(dataUri);
-                form.setValue('backCardImageUrl', dataUri);
-            }
-            setIsCameraOpen(false);
-            setCameraFor(null);
-        }
-    };
 
   const onChargeSubmit = async (values: z.infer<typeof chargeFormSchema>) => {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Explicit cleaning of undefined values for Firestore
+    // Clean undefined values for Firestore
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -345,57 +292,62 @@ export default function ClientesPage() {
     if (prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
     
     try {
-      const newChargeRef = doc(collection(firestore, 'cobrancas'));
-      await setDoc(newChargeRef, chargeData);
+      const newRef = doc(collection(firestore, 'cobrancas'));
+      await setDoc(newRef, chargeData);
       for (const p of prizesForCharge) {
         await updateDoc(doc(firestore, 'premios', p.prizeId), { quantity: increment(-p.quantity) });
       }
       triggerSuccess();
       toast({ title: 'Cobrança Salva!', description: `Sucesso para ${selectedClient.name}` });
-      handlePrintReceipt({ ...chargeData, id: newChargeRef.id });
+      handlePrintReceipt({ ...chargeData, id: newRef.id });
       handleChargeDialogClose(false);
-      form.reset();
     } catch (error: any) {
-      console.error("Error saving charge:", error);
-      toast({ title: 'Erro ao Salvar!', description: error.message || 'Falha na conexão.', variant: 'destructive' });
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Erro!', description: 'Falha ao salvar.' });
     } finally {
       setIsSubmittingCharge(false);
     }
   };
 
+  const handlePrintReceipt = (cobranca: Cobranca) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const receiptHtml = ReactDOMServer.renderToString(<Receipt cobranca={cobranca} />);
+    printWindow.document.write(`<html><head><title>Recibo</title>${document.head.innerHTML}<style>@media print {@page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } } body { width: 80mm; margin: 0; padding: 0; background: white; }</style></head><body>${receiptHtml}</body></html>`);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
+  };
+
   const filteredClients = useMemo(() => {
     if (!clients) return [];
-    if (!searchTerm) return clients;
     const term = searchTerm.toLowerCase();
-    return clients.filter(client => client.name.toLowerCase().includes(term) || client.route.toLowerCase().includes(term));
+    return clients.filter(c => c.name.toLowerCase().includes(term) || c.route.toLowerCase().includes(term));
   }, [searchTerm, clients]);
 
   const clientVisitStatus = useMemo(() => {
     const statusMap = new Map<string, 'visited' | 'not-visited'>();
     if (!allCobrancas || !clients || !currentDate) {
-        clients?.forEach(client => statusMap.set(client.id!, 'not-visited'));
+        clients?.forEach(c => statusMap.set(c.id!, 'not-visited'));
         return statusMap;
     }
     const sorted = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    clients.forEach(client => {
-      const last = sorted.find(c => c.clientId === client.id);
-      statusMap.set(client.id!, last && differenceInDays(currentDate, last.createdAt) <= 25 ? 'visited' : 'not-visited');
+    clients.forEach(c => {
+      const last = sorted.find(ch => ch.clientId === c.id);
+      statusMap.set(c.id!, last && differenceInDays(currentDate, last.createdAt) <= 25 ? 'visited' : 'not-visited');
     });
     return statusMap;
   }, [allCobrancas, clients, currentDate]);
 
   const clientsByRoute = useMemo(() => {
     if (!filteredClients || !routes) return {};
-    const routeMap = new Map<string, string>();
-    routes.forEach(r => routeMap.set(r.name, r.description));
     return filteredClients.reduce((acc, client) => {
-      if (!acc[client.route]) acc[client.route] = { description: routeMap.get(client.route) || '', clients: [] };
+      if (!acc[client.route]) acc[client.route] = { clients: [] };
       acc[client.route].clients.push(client);
       return acc;
-    }, {} as Record<string, { description: string; clients: Client[] }>);
+    }, {} as Record<string, { clients: Client[] }>);
   }, [filteredClients, routes]);
 
-  if (isLoading) {
+  if (isLoadingClients || isLoadingRoutes) {
     return (
         <div className="flex items-center justify-center h-[60vh] text-muted-foreground">
             <Loader2 className="h-10 w-10 animate-spin mr-3" />
@@ -420,12 +372,9 @@ export default function ClientesPage() {
         </div>
 
         <div className="space-y-6">
-            {Object.entries(clientsByRoute).sort(([a], [b]) => a.localeCompare(b)).map(([routeName, { description, clients: routeClients }]) => (
+            {Object.entries(clientsByRoute).sort(([a], [b]) => a.localeCompare(b)).map(([routeName, { clients: routeClients }]) => (
                 <div key={routeName} className="space-y-3">
-                    <h2 className="text-sm font-semibold border-b pb-1 flex items-baseline gap-2">
-                        {routeName}
-                        {description && <span className="text-[10px] font-normal text-muted-foreground truncate">- {description}</span>}
-                    </h2>
+                    <h2 className="text-sm font-semibold border-b pb-1">{routeName}</h2>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {routeClients.map(client => (
                             <ClientCard 

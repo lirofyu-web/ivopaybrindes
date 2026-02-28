@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,14 +27,6 @@
     --input: 210 40% 89.8%;
     --ring: 217 91% 60%;
     --radius: 0.5rem;
-    --sidebar-background: 222 47% 13%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 33% 25%;
-    --sidebar-ring: 217 91% 60%;
   }
   .dark {
     --background: 222 47% 11%;
@@ -57,43 +50,23 @@
     --border: 217 33% 25%;
     --input: 217 33% 20%;
     --ring: 217 91% 60%;
-    --sidebar-background: 222 47% 13%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 33% 25%;
-    --sidebar-ring: 217 91% 60%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
-    @apply bg-background text-foreground overflow-x-hidden select-none;
+    @apply bg-background text-foreground overflow-x-hidden select-none antialiased;
     -webkit-tap-highlight-color: transparent;
   }
 }
 
 @layer components {
-  .mobile-container {
-    @apply px-3 sm:px-6 w-full max-w-7xl mx-auto;
-  }
+  .mobile-container { @apply px-3 sm:px-6 w-full max-w-7xl mx-auto; }
 }
 
-@keyframes checkmark {
-  0% { stroke-dashoffset: 48; }
-  100% { stroke-dashoffset: 0; }
-}
-
-@keyframes scaleUp {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
-}
+@keyframes checkmark { 0% { stroke-dashoffset: 48; } 100% { stroke-dashoffset: 0; } }
+@keyframes scaleUp { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
 .animate-checkmark {
   stroke-dasharray: 48;
@@ -105,35 +78,9 @@
   animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* Custom Table Adjustments for Mobile */
 @media (max-width: 640px) {
-  .recharts-responsive-container {
-    min-height: 250px;
-  }
-  
-  table th, table td {
-    @apply px-2 py-3 text-[11px] leading-tight;
-  }
-
-  table th {
-    @apply font-bold uppercase text-muted-foreground;
-  }
-
-  .font-headline {
-    @apply text-xl font-bold;
-  }
-
-  /* Prevent text cutting and ensure centering */
-  .truncate-mobile {
-    @apply truncate max-w-[140px];
-  }
-
-  .flex-center-mobile {
-    @apply flex items-center justify-center;
-  }
-
-  /* Card and Form adjustments for mobile touch */
-  .button-mobile {
-    @apply h-12 text-base;
-  }
+  table th, table td { @apply px-2 py-3 text-[11px] leading-tight; }
+  .font-headline { @apply text-xl font-bold; }
+  .button-mobile { @apply h-12 text-base; }
+  .max-w-2xl { @apply w-full max-w-full px-1; }
 }
