@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 // --- Add Prize Form Schema ---
 const prizeFormSchema = z.object({
@@ -62,6 +63,7 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
 // --- Main Page Component ---
 export default function PremiosPage() {
     const firestore = useFirestore();
+    const { triggerSuccess } = useSuccessAnimation();
     const { data: prizes, isLoading } = useCollection<Prize>('premios');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,6 +159,7 @@ export default function PremiosPage() {
         if (!firestore) return;
         try {
             await deleteDoc(doc(firestore, 'premios', prizeId));
+            triggerSuccess();
             toast({
                 title: 'Prêmio Deletado!',
                 description: 'O prêmio foi removido da sua lista.',
@@ -180,12 +183,14 @@ export default function PremiosPage() {
             if (editingPrize) {
                 const prizeDocRef = doc(firestore, 'premios', editingPrize.id!);
                 await updateDoc(prizeDocRef, values);
+                triggerSuccess();
                 toast({
                     title: 'Prêmio Atualizado!',
                     description: `O prêmio "${values.name}" foi atualizado com sucesso.`,
                 });
             } else {
                 await addDoc(collection(firestore, 'premios'), values);
+                triggerSuccess();
                 toast({
                     title: 'Prêmio Adicionado!',
                     description: `O prêmio "${values.name}" foi cadastrado com sucesso.`,

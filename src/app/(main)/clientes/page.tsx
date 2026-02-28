@@ -25,6 +25,7 @@ import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'fireba
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 
 function formatCurrency(value: number) {
@@ -125,6 +126,7 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 // --- Main Page Component ---
 export default function ClientesPage() {
   const firestore = useFirestore();
+  const { triggerSuccess } = useSuccessAnimation();
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
   const { data: allCobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
   const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
@@ -246,6 +248,7 @@ export default function ClientesPage() {
     
     try {
       await deleteDoc(doc(firestore, 'clients', clientToDelete.id!));
+      triggerSuccess();
       toast({
         title: 'Cliente Excluído!',
         description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
@@ -426,6 +429,7 @@ export default function ClientesPage() {
         });
       }
 
+      triggerSuccess();
       toast({
         title: 'Cobrança Salva!',
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,

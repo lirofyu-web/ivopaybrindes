@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 const routeFormSchema = z.object({
   name: z.string().min(3, 'O nome da rota deve ter pelo menos 3 caracteres.'),
@@ -46,6 +47,7 @@ function RouteCard({ route, onEdit, onDelete }: { route: Route; onEdit: (route: 
 
 export default function RotasPage() {
     const firestore = useFirestore();
+    const { triggerSuccess } = useSuccessAnimation();
     const { data: routes, isLoading } = useCollection<Route>('rotas');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,6 +86,7 @@ export default function RotasPage() {
         
         try {
             await deleteDoc(doc(firestore, 'rotas', routeToDelete.id!));
+            triggerSuccess();
             toast({
                 title: 'Rota Excluída!',
                 description: `A rota "${routeToDelete.name}" foi removida.`,
@@ -109,12 +112,14 @@ export default function RotasPage() {
             if (editingRoute) {
                 const routeDocRef = doc(firestore, 'rotas', editingRoute.id!);
                 await updateDoc(routeDocRef, values);
+                triggerSuccess();
                 toast({
                     title: 'Rota Atualizada!',
                     description: `A rota "${values.name}" foi atualizada.`,
                 });
             } else {
                 await addDoc(collection(firestore, 'rotas'), values);
+                triggerSuccess();
                 toast({
                     title: 'Rota Adicionada!',
                     description: `A rota "${values.name}" foi cadastrada.`,

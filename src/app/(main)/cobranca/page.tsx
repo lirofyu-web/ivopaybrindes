@@ -19,6 +19,7 @@ import { useCollection, useFirestore } from '@/firebase';
 import { deleteDoc, doc } from "firebase/firestore";
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -30,6 +31,7 @@ function formatDate(date: Date) {
 
 export default function CobrancaPage() {
     const firestore = useFirestore();
+    const { triggerSuccess } = useSuccessAnimation();
     const { data: cobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
     const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
     const [selectedRoute, setSelectedRoute] = useState('all');
@@ -195,6 +197,7 @@ export default function CobrancaPage() {
         
         try {
             await deleteDoc(doc(firestore, 'cobrancas', cobrancaToDelete.id!));
+            triggerSuccess();
             toast({
                 title: 'Cobrança Excluída!',
                 description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`,
@@ -235,9 +238,7 @@ export default function CobrancaPage() {
                 <div className="flex sm:flex-row flex-col sm:items-center sm:justify-between gap-4">
                     <div>
                         <CardTitle>Cobranças Realizadas</CardTitle>
-                        <CardDescription>
-                            Filtre e imprima o relatório de cobranças.
-                        </CardDescription>
+                        <CardTitle>Histórico Geral</CardTitle>
                     </div>
                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                          <div className="flex items-center gap-2">

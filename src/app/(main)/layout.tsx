@@ -6,6 +6,7 @@ import AppSidebar from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Loader2 } from 'lucide-react';
+import { SuccessProvider } from '@/components/success-animation-provider';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, error } = useUser();
@@ -34,16 +35,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="min-h-svh flex flex-col">
-        <Header />
-        <div className="flex-1 p-3 sm:p-6 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
+    <SuccessProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="min-h-svh flex flex-col">
+          <Header />
+          <div className="flex-1 p-3 sm:p-6 overflow-x-hidden">
+            <div className="max-w-7xl mx-auto w-full">
+              {children}
+            </div>
           </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </SidebarInset>
+      </SidebarProvider>
+    </SuccessProvider>
   );
 }

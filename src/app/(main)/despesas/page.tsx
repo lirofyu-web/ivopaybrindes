@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 // --- Form Schema ---
 const despesaFormSchema = z.object({
@@ -41,6 +42,7 @@ function formatDate(date: Date) {
 
 export default function DespesasPage() {
     const firestore = useFirestore();
+    const { triggerSuccess } = useSuccessAnimation();
     const { data: despesas, isLoading: isLoadingDespesas } = useCollection<Despesa>('despesas');
     const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
     
@@ -144,6 +146,7 @@ export default function DespesasPage() {
 
         try {
             await addDoc(collection(firestore, 'despesas'), newDespesa);
+            triggerSuccess();
             toast({
                 title: 'Despesa Adicionada!',
                 description: `A despesa "${values.description}" foi registrada.`,
@@ -172,6 +175,7 @@ export default function DespesasPage() {
         
         try {
             await deleteDoc(doc(firestore, 'despesas', despesaToDelete.id!));
+            triggerSuccess();
             toast({
                 title: 'Despesa Excluída!',
                 description: `A despesa "${despesaToDelete.description}" foi removida.`,

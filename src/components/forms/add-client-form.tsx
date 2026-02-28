@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { useSuccessAnimation } from '@/components/success-animation-provider';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
@@ -45,6 +46,7 @@ const formSchema = z.object({
 export function AddClientForm({ client }: { client?: Client }) {
   const router = useRouter();
   const firestore = useFirestore();
+  const { triggerSuccess } = useSuccessAnimation();
   const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
   const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
 
@@ -103,6 +105,7 @@ export function AddClientForm({ client }: { client?: Client }) {
       if (isEditing && client?.id) {
           const clientDocRef = doc(firestore, 'clients', client.id);
           await updateDoc(clientDocRef, clientData);
+          triggerSuccess();
           toast({
             title: 'Sucesso!',
             description: `Cliente "${values.name}" atualizado.`,
@@ -111,6 +114,7 @@ export function AddClientForm({ client }: { client?: Client }) {
           router.refresh();
       } else {
           await addDoc(collection(firestore, 'clients'), { ...clientData, status: 'active' });
+          triggerSuccess();
           toast({
             title: 'Sucesso!',
             description: `Cliente "${values.name}" adicionado.`,
