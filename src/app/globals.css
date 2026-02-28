@@ -73,7 +73,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
+    @apply bg-background text-foreground overflow-x-hidden select-none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -123,18 +124,23 @@
   }
   
   table th, table td {
-    @apply px-1 py-1.5 text-[10px] leading-tight;
+    @apply px-1.5 py-2 text-[11px] leading-tight whitespace-nowrap;
   }
 
   table th {
-    @apply font-bold uppercase;
+    @apply font-bold uppercase text-muted-foreground;
   }
 
   .font-headline {
-    @apply text-center w-full block text-xl;
+    @apply text-xl font-bold;
   }
 
   .card-mobile-padding {
     @apply p-3;
+  }
+
+  /* Prevent text cutting */
+  .truncate-mobile {
+    @apply truncate max-w-[120px];
   }
 }

@@ -46,7 +46,6 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-// --- Charge Form Schema ---
 const chargeFormSchema = z.object({
   scratchedAmount: z.coerce.number().min(1, 'A quantidade deve ser pelo menos 1.'),
   discount: z.coerce.number().optional().default(0),
@@ -62,59 +61,58 @@ const chargeFormSchema = z.object({
 });
 
 
-// --- ClientCard component ---
 function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
-    <Card className="bg-card/80 shadow-lg border-border/50">
+    <Card className="bg-card/80 shadow-lg border-border/50 overflow-hidden">
       <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         <div className="flex justify-between items-start">
             <div className="space-y-1 flex-1 min-w-0 pr-2">
                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base sm:text-lg font-bold text-accent truncate max-w-full">{client.name}</h3>
                     <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-[10px] sm:text-xs font-normal">
-                      {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
+                      {visitStatus === 'visited' ? 'Visitado' : 'Pendente'}
                     </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-[11px] sm:text-sm text-muted-foreground">
                     <p>{client.route}</p>
                 </div>
             </div>
             <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
-                <WhatsAppIcon className="w-10 h-10"/>
+                <WhatsAppIcon className="w-10 h-10 transition-transform active:scale-90"/>
                 <span className="sr-only">WhatsApp</span>
             </a>
         </div>
 
         <div className="space-y-2 text-xs sm:text-sm text-foreground/80">
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block hover:underline">
-                <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <span className="line-clamp-2">{client.address}, {client.city}</span>
+                <div className="flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <span className="line-clamp-1">{client.address}, {client.city}</span>
                 </div>
             </a>
-            <div className="flex items-center gap-3">
-                <DollarSign className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <div className="flex items-center gap-2">
+                <DollarSign className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <span>Raspinha: {formatCurrency(client.raspinha)}</span>
             </div>
-            <div className="flex items-center gap-3">
-                <Percent className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <div className="flex items-center gap-2">
+                <Percent className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <span>Comissão: {client.comissao}%</span>
             </div>
         </div>
 
         <div className="flex items-center gap-2 pt-2">
-            <Button size="sm" className="flex-1 text-xs" onClick={() => onChargeClick(client)}>
+            <Button size="sm" className="flex-1 text-xs h-10" onClick={() => onChargeClick(client)}>
                 <DollarSign className="mr-1 h-3.5 w-3.5" />
                 Cobrança
             </Button>
             <Link href={`/clientes/editar/${client.id}`} className="flex-shrink-0">
-              <Button size="icon" variant="outline" className="h-9 w-9 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500">
+              <Button size="icon" variant="outline" className="h-10 w-10 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
                   <Edit className="h-4 w-4" />
               </Button>
             </Link>
-            <Button size="icon" variant="outline" className="h-9 w-9 border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500" onClick={() => onDeleteClick(client)}>
+            <Button size="icon" variant="outline" className="h-10 w-10 border-red-500/50 bg-red-500/10 text-red-500" onClick={() => onDeleteClick(client)}>
                 <Trash2 className="h-4 w-4" />
             </Button>
         </div>
@@ -123,7 +121,6 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
   );
 }
 
-// --- Main Page Component ---
 export default function ClientesPage() {
   const firestore = useFirestore();
   const { triggerSuccess } = useSuccessAnimation();
@@ -141,12 +138,10 @@ export default function ClientesPage() {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   
-  // State for prizes in the dialog
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
   const [prizeQuantity, setPrizeQuantity] = useState(1);
   
-  // Camera state
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -185,7 +180,7 @@ export default function ClientesPage() {
                     toast({
                         variant: 'destructive',
                         title: 'Acesso à Câmera Negado',
-                        description: 'Por favor, habilite a permissão da câmera nas configurações do seu navegador.',
+                        description: 'Por favor, habilite a permissão da câmera.',
                     });
                     setIsCameraOpen(false); 
                 }
@@ -197,11 +192,6 @@ export default function ClientesPage() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
-             if (videoRef.current && videoRef.current.srcObject) {
-                const mediaStream = videoRef.current.srcObject as MediaStream;
-                mediaStream.getTracks().forEach(track => track.stop());
-                videoRef.current.srcObject = null;
-            }
         };
     }, [isCameraOpen, toast]);
 
@@ -212,7 +202,7 @@ export default function ClientesPage() {
     const grossRevenue = scratchedAmount * selectedClient.raspinha;
     const commissionValue = grossRevenue * (selectedClient.comissao / 100);
     const netRevenue = grossRevenue - commissionValue;
-    const finalNetRevenue = netRevenue - discount;
+    const finalNetRevenue = netRevenue - (discount || 0);
     return { grossRevenue, commissionValue, netRevenue, finalNetRevenue };
   }, [selectedClient, scratchedAmount, discount]);
 
@@ -226,8 +216,6 @@ export default function ClientesPage() {
     setBackImage(null);
     setIsCameraOpen(false);
     setHasCameraPermission(null);
-    setSelectedPrizeForAdd(null);
-    setPrizeQuantity(1);
   };
 
   const handleChargeDialogClose = (open: boolean) => {
@@ -251,16 +239,11 @@ export default function ClientesPage() {
       triggerSuccess();
       toast({
         title: 'Cliente Excluído!',
-        description: `O cliente "${clientToDelete.name}" foi removido com sucesso.`,
+        description: `O cliente "${clientToDelete.name}" foi removido.`,
         variant: 'destructive'
       });
     } catch (error) {
       console.error("Error deleting client:", error);
-      toast({
-        title: 'Erro!',
-        description: 'Não foi possível excluir o cliente.',
-        variant: 'destructive'
-      });
     }
     setIsDeleteDialogOpen(false);
     setClientToDelete(null);
@@ -268,20 +251,16 @@ export default function ClientesPage() {
 
   const handleAddPrizeToCharge = () => {
     if (!selectedPrizeForAdd || prizeQuantity <= 0) return;
-    
     const availableStock = prizes?.find(p => p.id === selectedPrizeForAdd.id)?.quantity ?? 0;
-
     if (prizeQuantity > availableStock) {
         toast({
             variant: 'destructive',
             title: 'Estoque Insuficiente',
-            description: `Só existem ${availableStock} unidades de ${selectedPrizeForAdd.name} em estoque.`
+            description: `Apenas ${availableStock} em estoque.`
         });
         return;
     }
-
     const newPrizeEntry = { prizeId: selectedPrizeForAdd.id!, prizeName: selectedPrizeForAdd.name, quantity: prizeQuantity };
-    
     setPrizesForCharge(prev => {
         const existingPrizeIndex = prev.findIndex(p => p.prizeId === newPrizeEntry.prizeId);
         let updatedPrizes;
@@ -294,15 +273,8 @@ export default function ClientesPage() {
         form.setValue('prizesGiven', updatedPrizes);
         return updatedPrizes;
     });
-    
     setSelectedPrizeForAdd(null);
     setPrizeQuantity(1);
-  };
-  
-  const handleRemovePrizeFromCharge = (prizeId: string) => {
-      const updatedPrizes = prizesForCharge.filter(p => p.prizeId !== prizeId);
-      setPrizesForCharge(updatedPrizes);
-      form.setValue('prizesGiven', updatedPrizes);
   };
 
   const handlePrintReceipt = (cobranca: Cobranca) => {
@@ -311,49 +283,14 @@ export default function ClientesPage() {
         toast({
             variant: 'destructive',
             title: 'Erro ao imprimir',
-            description: 'Por favor, habilite pop-ups para gerar o recibo.',
+            description: 'Habilite pop-ups para o recibo.',
         });
         return;
     }
-    
-    const receiptHtml = ReactDOMServer.renderToString(
-      <Receipt cobranca={cobranca} />
-    );
-
+    const receiptHtml = ReactDOMServer.renderToString(<Receipt cobranca={cobranca} />);
     const pageStyles = document.head.innerHTML;
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Recibo - ${cobranca.clientName}</title>
-                ${pageStyles}
-                <style>
-                    @media print {
-                        @page { 
-                            size: 80mm auto;
-                            margin: 0;
-                        }
-                        body {
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                        }
-                    }
-                    body {
-                        width: 80mm;
-                        margin: 0;
-                        padding: 0;
-                        background: white;
-                    }
-                </style>
-            </head>
-            <body class="light">
-                ${receiptHtml}
-            </body>
-        </html>
-    `);
-
+    printWindow.document.write(`<html><head><title>Recibo</title>${pageStyles}<style>@media print {@page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } } body { width: 80mm; margin: 0; padding: 0; background: white; }</style></head><body class="light">${receiptHtml}</body></html>`);
     printWindow.document.close();
-
     setTimeout(() => {
         printWindow.focus();
         printWindow.print();
@@ -365,13 +302,11 @@ export default function ClientesPage() {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
-
         if (context) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            const dataUri = canvas.toDataURL('image/jpeg');
-            
+            const dataUri = canvas.toDataURL('image/jpeg', 0.8);
             if (cameraFor === 'front') {
                 setFrontImage(dataUri);
                 form.setValue('frontCardImageUrl', dataUri);
@@ -384,16 +319,11 @@ export default function ClientesPage() {
         }
     };
 
-    const openCamera = (type: 'front' | 'back') => {
-        setCameraFor(type);
-        setIsCameraOpen(true);
-    }
-
   const onChargeSubmit = async (values: z.infer<typeof chargeFormSchema>) => {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
-    // Create a clean data object to avoid undefined values which Firestore rejects
+    // Explicit cleaning of undefined values for Firestore
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -408,48 +338,26 @@ export default function ClientesPage() {
         discount: values.discount || 0,
     };
     
-    // Explicitly add optional fields only if they have values
     if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
     if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
     if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
     if (values.backCardImageUrl) chargeData.backCardImageUrl = values.backCardImageUrl;
-    if (prizesForCharge && prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
+    if (prizesForCharge.length > 0) chargeData.prizesGiven = prizesForCharge;
     
     try {
       const newChargeRef = doc(collection(firestore, 'cobrancas'));
-      const chargeId = newChargeRef.id;
-
       await setDoc(newChargeRef, chargeData);
-      
-      // Update prize stocks
-      for (const prizeGiven of prizesForCharge) {
-        const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
-        await updateDoc(prizeDocRef, {
-            quantity: increment(-prizeGiven.quantity)
-        });
+      for (const p of prizesForCharge) {
+        await updateDoc(doc(firestore, 'premios', p.prizeId), { quantity: increment(-p.quantity) });
       }
-
       triggerSuccess();
-      toast({
-        title: 'Cobrança Salva!',
-        description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
-      });
-      
-      handlePrintReceipt({ ...chargeData, id: chargeId });
-
+      toast({ title: 'Cobrança Salva!', description: `Sucesso para ${selectedClient.name}` });
+      handlePrintReceipt({ ...chargeData, id: newChargeRef.id });
       handleChargeDialogClose(false);
       form.reset();
-      setPrizesForCharge([]);
-      setFrontImage(null);
-      setBackImage(null);
-
     } catch (error: any) {
       console.error("Error saving charge:", error);
-      toast({
-        title: 'Erro ao Salvar!',
-        description: error.message || 'Não foi possível salvar a cobrança. Verifique sua conexão e tente novamente.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro ao Salvar!', description: error.message || 'Falha na conexão.', variant: 'destructive' });
     } finally {
       setIsSubmittingCharge(false);
     }
@@ -458,10 +366,8 @@ export default function ClientesPage() {
   const filteredClients = useMemo(() => {
     if (!clients) return [];
     if (!searchTerm) return clients;
-    return clients.filter(client => 
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.route.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const term = searchTerm.toLowerCase();
+    return clients.filter(client => client.name.toLowerCase().includes(term) || client.route.toLowerCase().includes(term));
   }, [searchTerm, clients]);
 
   const clientVisitStatus = useMemo(() => {
@@ -469,57 +375,31 @@ export default function ClientesPage() {
     if (!allCobrancas || !clients || !currentDate) {
         clients?.forEach(client => statusMap.set(client.id!, 'not-visited'));
         return statusMap;
-    };
-    const now = currentDate;
-    
-    const sortedCobrancas = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
+    }
+    const sorted = [...allCobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     clients.forEach(client => {
-      const lastCharge = sortedCobrancas.find(c => c.clientId === client.id);
-      if (lastCharge && differenceInDays(now, lastCharge.createdAt) <= 25) {
-        statusMap.set(client.id!, 'visited');
-      } else {
-        statusMap.set(client.id!, 'not-visited');
-      }
+      const last = sorted.find(c => c.clientId === client.id);
+      statusMap.set(client.id!, last && differenceInDays(currentDate, last.createdAt) <= 25 ? 'visited' : 'not-visited');
     });
     return statusMap;
   }, [allCobrancas, clients, currentDate]);
 
   const clientsByRoute = useMemo(() => {
     if (!filteredClients || !routes) return {};
-
-    const routeDescriptionMap = new Map<string, string>();
-    routes.forEach(r => routeDescriptionMap.set(r.name, r.description));
-
+    const routeMap = new Map<string, string>();
+    routes.forEach(r => routeMap.set(r.name, r.description));
     return filteredClients.reduce((acc, client) => {
-      const routeName = client.route;
-      if (!acc[routeName]) {
-        acc[routeName] = {
-          description: routeDescriptionMap.get(routeName) || '',
-          clients: []
-        };
-      }
-      acc[routeName].clients.push(client);
+      if (!acc[client.route]) acc[client.route] = { description: routeMap.get(client.route) || '', clients: [] };
+      acc[client.route].clients.push(client);
       return acc;
     }, {} as Record<string, { description: string; clients: Client[] }>);
   }, [filteredClients, routes]);
 
-
   if (isLoading) {
     return (
-        <div className="space-y-6 px-4">
-             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <Users className="h-8 w-8 text-muted-foreground" />
-                    <h1 className="text-2xl font-bold font-headline">
-                        Gerenciar Clientes
-                    </h1>
-                </div>
-            </div>
-            <div className="text-center py-12 text-muted-foreground">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin" />
-                <p className="mt-4">Carregando clientes...</p>
-            </div>
+        <div className="flex items-center justify-center h-[60vh] text-muted-foreground">
+            <Loader2 className="h-10 w-10 animate-spin mr-3" />
+            <span>Carregando...</span>
         </div>
     )
   }
@@ -527,39 +407,26 @@ export default function ClientesPage() {
   return (
     <div className="space-y-4 mobile-container">
         <canvas ref={canvasRef} className="hidden"></canvas>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-                <Users className="h-8 w-8 text-muted-foreground" />
-                <h1 className="text-2xl sm:text-3xl font-bold font-headline text-left">
-                    Clientes
-                </h1>
-            </div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold font-headline w-full text-left">Clientes</h1>
             <Link href="/clientes/novo" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto h-11">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Novo Cliente
-                </Button>
+                <Button className="w-full h-11"><PlusCircle className="mr-2 h-4 w-4" />Novo Cliente</Button>
             </Link>
         </div>
         
         <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-                placeholder="Buscar por nome ou rota..."
-                className="pl-10 h-11"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Buscar por nome ou rota..." className="pl-10 h-11 text-base" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
 
         <div className="space-y-6">
-            {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients: routeClients }]) => (
+            {Object.entries(clientsByRoute).sort(([a], [b]) => a.localeCompare(b)).map(([routeName, { description, clients: routeClients }]) => (
                 <div key={routeName} className="space-y-3">
-                    <h2 className="text-base font-semibold border-b border-border pb-1.5 px-1 flex items-baseline gap-2">
+                    <h2 className="text-sm font-semibold border-b pb-1 flex items-baseline gap-2">
                         {routeName}
                         {description && <span className="text-[10px] font-normal text-muted-foreground truncate">- {description}</span>}
                     </h2>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {routeClients.map(client => (
                             <ClientCard 
                                 key={client.id} 
@@ -572,240 +439,105 @@ export default function ClientesPage() {
                     </div>
                 </div>
             ))}
-            {filteredClients.length === 0 && !isLoading && (
-                <div className="text-center py-12 text-muted-foreground">
-                    <p>Nenhum cliente encontrado.</p>
-                </div>
-            )}
         </div>
 
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
-            <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-lg">
-                <DialogHeader className="mb-4">
-                    <DialogTitle className="text-lg">Cobrança: {selectedClient?.name}</DialogTitle>
-                    <DialogDescription className="text-xs">
-                    Insira os detalhes da venda para calcular e salvar.
-                    </DialogDescription>
+            <DialogContent className="w-[95vw] sm:max-w-lg max-h-[95vh] overflow-y-auto p-4 rounded-lg">
+                <DialogHeader className="mb-2">
+                    <DialogTitle className="text-base">Cobrança: {selectedClient?.name}</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                                control={form.control}
-                                name="scratchedAmount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs">Qtd. Rasp.</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="Ex: 100" className="h-10" {...field} />
-                                        </FormControl>
-                                        <FormMessage className="text-[10px]" />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="discount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs">Desconto (R$)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="0,00" className="h-10" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
-                                        </FormControl>
-                                        <FormMessage className="text-[10px]" />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormField control={form.control} name="scratchedAmount" render={({ field }) => (
+                                <FormItem><FormLabel className="text-xs">Qtd. Rasp.</FormLabel><FormControl><Input type="number" className="h-10 text-base" {...field} /></FormControl></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="discount" render={({ field }) => (
+                                <FormItem><FormLabel className="text-xs">Desconto (R$)</FormLabel><FormControl><Input type="number" step="0.01" className="h-10 text-base" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : e.target.valueAsNumber)} /></FormControl></FormItem>
+                            )}/>
                         </div>
-                        
-                        <Separator/>
                         
                         <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                                control={form.control}
-                                name="kitStatus"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-1.5">
-                                        <FormLabel className="text-xs">Kit Brindes</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                className="flex flex-col space-y-1"
-                                            >
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs">Manteve</FormLabel>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="novo" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs">Recebeu Novo</FormLabel>
-                                                </FormItem>
-                                            </RadioGroup>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="cartelaStatus"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-1.5">
-                                        <FormLabel className="text-xs">Cartela</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                className="flex flex-col space-y-1"
-                                            >
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs">Manteve</FormLabel>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                                    <FormControl><RadioGroupItem value="nova" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs">Recebeu Nova</FormLabel>
-                                                </FormItem>
-                                            </RadioGroup>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
+                            <FormField control={form.control} name="kitStatus" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[11px]">Kit Brindes</FormLabel>
+                                    <RadioGroup onValueChange={field.onChange} className="flex flex-col gap-1.5">
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="manteve" id="k-m"/><label htmlFor="k-m" className="text-xs">Manteve</label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="novo" id="k-n"/><label htmlFor="k-n" className="text-xs">Novo</label></div>
+                                    </RadioGroup>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="cartelaStatus" render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                    <FormLabel className="text-[11px]">Cartela</FormLabel>
+                                    <RadioGroup onValueChange={field.onChange} className="flex flex-col gap-1.5">
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="manteve" id="c-m"/><label htmlFor="c-m" className="text-xs">Manteve</label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="nova" id="c-n"/><label htmlFor="c-n" className="text-xs">Nova</label></div>
+                                    </RadioGroup>
+                                </FormItem>
+                            )}/>
                         </div>
 
                         <Separator/>
                         
-                        <div className="space-y-3">
-                            <h4 className="font-medium text-xs">Prêmios que saíram</h4>
-                            <div className="space-y-1.5">
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-[11px]">Prêmios Entregues</h4>
+                            <div className="flex gap-2 items-end">
+                                <Select onValueChange={(id) => setSelectedPrizeForAdd(prizes?.find(p => p.id === id) || null)} value={selectedPrizeForAdd?.id || ''}>
+                                    <SelectTrigger className="h-9 text-xs flex-1"><SelectValue placeholder="Escolher item" /></SelectTrigger>
+                                    <SelectContent>
+                                        {prizes?.filter(p => p.quantity > 0).map(p => <SelectItem key={p.id} value={p.id!}>{p.name} (Est: {p.quantity})</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Input type="number" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="w-14 h-9 text-xs" />
+                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} size="sm" className="h-9">Add</Button>
+                            </div>
+                            <div className="space-y-1">
                                 {prizesForCharge.map(p => (
-                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-[11px]">
-                                        <span className="truncate mr-2">{p.prizeName} <span className="text-muted-foreground ml-1">x{p.quantity}</span></span>
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
-                                            <X className="h-4 w-4"/>
-                                        </Button>
+                                    <div key={p.prizeId} className="flex justify-between p-1.5 bg-muted/50 rounded text-xs">
+                                        <span>{p.prizeName} x{p.quantity}</span>
+                                        <X className="h-4 w-4 text-destructive cursor-pointer" onClick={() => setPrizesForCharge(prizesForCharge.filter(x => x.prizeId !== p.prizeId))} />
                                     </div>
                                 ))}
-                                {prizesForCharge.length === 0 && <p className="text-[10px] text-muted-foreground text-center py-1">Nenhum prêmio saiu.</p>}
-                            </div>
-                            <div className="flex gap-2 items-end">
-                                <FormItem className="flex-1 min-w-0">
-                                    <FormLabel className="text-[10px]">Prêmio</FormLabel>
-                                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
-                                        <FormControl>
-                                            <SelectTrigger className="h-9 text-xs">
-                                                <SelectValue placeholder="Selecione" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {prizes?.filter(p => p.quantity > 0).map(prize => (
-                                                <SelectItem key={prize.id} value={prize.id!}>
-                                                    <div className="flex justify-between items-center w-full min-w-[200px] gap-2">
-                                                        <span className="truncate text-xs flex-1">{prize.name}</span>
-                                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground whitespace-nowrap">Est: {prize.quantity}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                                <FormItem className="w-16">
-                                    <FormLabel className="text-[10px]">Qtd.</FormLabel>
-                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="h-9 px-1.5 text-xs" />
-                                </FormItem>
-                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="h-9 text-[11px] px-2">Add</Button>
                             </div>
                         </div>
                         
                         <Separator/>
 
                         <div className="space-y-3">
-                            <h4 className="font-medium text-xs">Fotos da Cartela <span className="text-[10px] text-muted-foreground font-normal ml-1">(Opcional)</span></h4>
+                            <h4 className="font-medium text-[11px]">Fotos da Cartela <span className="text-muted-foreground">(Opcional)</span></h4>
                             {isCameraOpen ? (
-                                <div className="space-y-3 p-3 border rounded-md">
-                                    <h5 className="font-semibold text-center text-[10px]">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
-                                    {hasCameraPermission === false && (
-                                        <Alert variant="destructive" className="p-2">
-                                            <AlertDescription className="text-[10px]">
-                                                Permita o acesso à câmera nas configurações.
-                                            </AlertDescription>
-                                        </Alert>
-                                    )}
+                                <div className="space-y-2 border p-2 rounded">
                                     <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                     <div className="flex gap-2 justify-center">
-                                        <Button type="button" size="sm" onClick={handleTakePhoto} disabled={hasCameraPermission !== true} className="text-xs h-9">
-                                            <Camera className="mr-1.5 h-3.5 w-3.5" />
-                                            Tirar Foto
-                                        </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsCameraOpen(false)} className="text-xs h-9">Cancelar</Button>
+                                        <Button type="button" size="sm" onClick={handleTakePhoto} className="h-10"><Camera className="mr-2 h-4 w-4" />Foto</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsCameraOpen(false)}>Sair</Button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <FormLabel className="text-[10px]">Frente</FormLabel>
-                                        {frontImage ? (
-                                            <div className="relative w-full aspect-video rounded-md overflow-hidden border">
-                                                <Image src={frontImage} alt="Frente" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-0.5 right-0.5 h-6 w-6" onClick={() => { setFrontImage(null); form.setValue('frontCardImageUrl', undefined); }}>
-                                                    <X className="h-3.5 w-3.5"/>
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <Button type="button" variant="outline" className="w-full h-14 flex-col gap-1 text-[10px]" onClick={() => openCamera('front')}>
-                                                <Camera className="h-4 w-4" /> Foto Frente
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <FormLabel className="text-[10px]">Verso</FormLabel>
-                                        {backImage ? (
-                                            <div className="relative w-full aspect-video rounded-md overflow-hidden border">
-                                                <Image src={backImage} alt="Verso" fill className="object-cover" />
-                                                <Button type="button" variant="destructive" size="icon" className="absolute top-0.5 right-0.5 h-6 w-6" onClick={() => { setBackImage(null); form.setValue('backCardImageUrl', undefined); }}>
-                                                    <X className="h-3.5 w-3.5"/>
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <Button type="button" variant="outline" className="w-full h-14 flex-col gap-1 text-[10px]" onClick={() => openCamera('back')}>
-                                                <Camera className="h-4 w-4" /> Foto Verso
-                                            </Button>
-                                        )}
-                                    </div>
+                                    <Button type="button" variant="outline" className="h-12 flex-col gap-1 text-[10px]" onClick={() => { setCameraFor('front'); setIsCameraOpen(true); }}>
+                                        {frontImage ? <Image src={frontImage} alt="F" width={20} height={20} className="rounded" /> : <Camera className="h-4 w-4" />} Frente
+                                    </Button>
+                                    <Button type="button" variant="outline" className="h-12 flex-col gap-1 text-[10px]" onClick={() => { setCameraFor('back'); setIsCameraOpen(true); }}>
+                                        {backImage ? <Image src={backImage} alt="V" width={20} height={20} className="rounded" /> : <Camera className="h-4 w-4" />} Verso
+                                    </Button>
                                 </div>
                             )}
                         </div>
 
-                        {scratchedAmount > 0 && selectedClient && (
-                            <div className="space-y-2 rounded-lg border bg-muted/50 p-3">
-                                <h4 className="font-semibold text-center text-xs">Resumo da Cobrança</h4>
-                                <div className="space-y-1.5 text-[11px]">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Total Bruto</span>
-                                        <span>{formatCurrency(chargeCalculations.grossRevenue)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Comissão ({selectedClient.comissao}%)</span>
-                                        <span className="text-destructive">-{formatCurrency(chargeCalculations.commissionValue)}</span>
-                                    </div>
-                                    {discount > 0 && (
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Desconto</span>
-                                        <span className="text-destructive">-{formatCurrency(discount)}</span>
-                                    </div>
-                                    )}
-                                </div>
-                                <Separator className="my-1.5" />
-                                <div className="flex justify-between items-center font-bold">
-                                    <span className="text-[10px] uppercase">Líquido Empresa</span>
-                                    <span className="text-primary text-sm">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
-                                </div>
+                        {scratchedAmount > 0 && (
+                            <div className="rounded-lg border bg-muted/30 p-3 space-y-1 text-xs">
+                                <div className="flex justify-between"><span>Bruto</span><span>{formatCurrency(chargeCalculations.grossRevenue)}</span></div>
+                                <div className="flex justify-between text-destructive"><span>Comissão</span><span>-{formatCurrency(chargeCalculations.commissionValue)}</span></div>
+                                {discount > 0 && <div className="flex justify-between text-destructive"><span>Desconto</span><span>-{formatCurrency(discount)}</span></div>}
+                                <Separator className="my-1"/>
+                                <div className="flex justify-between font-bold text-sm"><span>LÍQUIDO</span><span className="text-primary">{formatCurrency(chargeCalculations.finalNetRevenue)}</span></div>
                             </div>
                         )}
 
-                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-12 text-sm">
-                            {isSubmittingCharge && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Salvar Cobrança
+                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-12 text-base">
+                            {isSubmittingCharge ? <Loader2 className="animate-spin" /> : 'Finalizar Cobrança'}
                         </Button>
                     </form>
                 </Form>
@@ -814,21 +546,10 @@ export default function ClientesPage() {
 
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent className="w-[90vw] rounded-lg">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir Cliente?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-xs sm:text-sm">
-                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
-                        <span className="font-bold"> {clientToDelete?.name} </span>.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                    <AlertDialogCancel onClick={() => setClientToDelete(null)} className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                        className={cn(buttonVariants({ variant: "destructive" }), "w-full sm:w-auto")}
-                        onClick={handleConfirmDelete}
-                    >
-                        Excluir
-                    </AlertDialogAction>
+                <AlertDialogHeader><AlertDialogTitle>Excluir Cliente?</AlertDialogTitle><AlertDialogDescription>Deseja remover permanentemente o cliente {clientToDelete?.name}?</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel className="h-11">Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className={cn(buttonVariants({ variant: "destructive" }), "h-11")} onClick={handleConfirmDelete}>Excluir</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

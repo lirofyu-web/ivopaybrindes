@@ -20,7 +20,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { AppLogo } from './logo';
@@ -45,49 +44,36 @@ export default function AppSidebar() {
       setOpenMobile(false);
     }
     
-    // Request fullscreen on interaction for a better app experience
-    const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch((err) => {
-                console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-        } else if ((elem as any).webkitRequestFullscreen) {
-            (elem as any).webkitRequestFullscreen();
-        }
+    // Request fullscreen on user interaction for a real PWA experience
+    const doc = window.document.documentElement as any;
+    const requestFullScreen = doc.requestFullscreen || doc.webkitRequestFullScreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
+
+    if (!window.document.fullscreenElement) {
+        requestFullScreen?.call(doc).catch((err: any) => {
+            console.warn(`Fullscreen error: ${err.message}`);
+        });
     }
   };
 
   return (
-    <Sidebar
-      className="border-r bg-sidebar print:hidden"
-      collapsible="offcanvas"
-    >
+    <Sidebar className="border-r bg-sidebar print:hidden" collapsible="offcanvas">
       <SidebarHeader className="p-4">
-        <div className="flex items-center justify-between">
-          <Link href="/clientes">
-            <AppLogo className="text-foreground group-data-[collapsible=icon]:hidden" />
-          </Link>
-          <div className="group-data-[collapsible=icon]:hidden">
-            {!isMobile && <SidebarTrigger />}
-          </div>
-        </div>
+        <Link href="/clientes" className="flex items-center gap-2">
+          <AppLogo className="text-foreground" />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="p-2">
+        <SidebarMenu className="p-2 gap-1.5">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.label}>
               <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuButton
                   onClick={handleNavClick}
-                  isActive={
-                    pathname === item.href ||
-                    (item.href !== '/' && pathname.startsWith(item.href))
-                  }
-                  tooltip={{ children: item.label, side: 'right' }}
+                  isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  className="h-11 px-3"
                 >
                   <item.icon className={item.className} />
-                  <span>{item.label}</span>
+                  <span className="font-medium">{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
