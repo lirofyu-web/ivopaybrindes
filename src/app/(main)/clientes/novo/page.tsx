@@ -3,13 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function NovoClientePage() {
     return (
-        <div className="max-w-2xl mx-auto">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Adicionar Novo Cliente</CardTitle>
-                    <CardDescription>Preencha os detalhes abaixo para cadastrar um novo cliente.</CardDescription>
+        <div className="max-w-2xl mx-auto px-1 sm:px-0">
+            <Card className="border-border/40 shadow-lg">
+                <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-xl sm:text-2xl">Adicionar Novo Cliente</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Preencha os detalhes abaixo para cadastrar um novo cliente.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                     <AddClientForm />
                 </CardContent>
             </Card>

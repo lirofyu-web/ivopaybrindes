@@ -15,8 +15,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
-import { Globe, Loader2, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Globe, Loader2, X, Plus } from 'lucide-react';
 import type { Prize, Client, Route } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
@@ -49,6 +50,7 @@ export function AddClientForm({ client }: { client?: Client }) {
   const { triggerSuccess } = useSuccessAnimation();
   const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
   const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
+  const { toast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationStatus, setLocationStatus] = useState('Salvar localização atual');
@@ -76,7 +78,6 @@ export function AddClientForm({ client }: { client?: Client }) {
       raspinha: 2.0,
       comissao: 25,
       prizes: [],
-      status: 'active'
     },
   });
 
@@ -97,7 +98,7 @@ export function AddClientForm({ client }: { client?: Client }) {
 
     const clientData = {
       ...values,
-      createdAt: client?.createdAt || new Date(), // Keep original createdAt on edit
+      createdAt: client?.createdAt || new Date(),
       updatedAt: new Date(),
     };
     
@@ -111,7 +112,6 @@ export function AddClientForm({ client }: { client?: Client }) {
             description: `Cliente "${values.name}" atualizado.`,
           });
           router.push('/clientes');
-          router.refresh();
       } else {
           await addDoc(collection(firestore, 'clients'), { ...clientData, status: 'active' });
           triggerSuccess();
@@ -119,20 +119,9 @@ export function AddClientForm({ client }: { client?: Client }) {
             title: 'Sucesso!',
             description: `Cliente "${values.name}" adicionado.`,
           });
-          form.reset({
-            name: '',
-            phone: '',
-            address: '',
-            city: '',
-            route: '',
-            raspinha: 2.0,
-            comissao: 25,
-            prizes: []
-          });
+          form.reset();
           setLocationStatus('Salvar localização atual');
           setInitialPrizes([]);
-          setSelectedPrizeForAdd(null);
-          setPrizeQuantity(1);
       }
     } catch (error) {
       console.error("Failed to save client:", error);
@@ -178,21 +167,11 @@ export function AddClientForm({ client }: { client?: Client }) {
                     }
                     toast({
                         title: 'Localização obtida!',
-                        description: 'Endereço e cidade/estado foram preenchidos.'
-                    })
-                } else {
-                     toast({
-                        title: 'Localização obtida!',
-                        description: 'A localização foi salva, mas não foi possível preencher o endereço.'
+                        description: 'Endereço preenchido automaticamente.'
                     })
                 }
             } catch (error) {
-                console.error("Erro ao buscar endereço reverso:", error);
-                 toast({
-                    title: 'Localização obtida!',
-                    description: 'A localização foi salva, mas ocorreu um erro ao buscar o endereço.',
-                    variant: 'destructive'
-                })
+                console.error("Erro ao buscar endereço:", error);
             } finally {
                 setLocationStatus('Localização salva!');
                 setIsLocating(false);
@@ -200,11 +179,11 @@ export function AddClientForm({ client }: { client?: Client }) {
         },
         (error) => {
             console.error(error);
-            setLocationStatus('Erro ao buscar. Tente novamente.');
+            setLocationStatus('Erro ao buscar.');
             setIsLocating(false);
             toast({
                 title: 'Erro de localização',
-                description: 'Não foi possível obter a localização. Verifique as permissões do navegador.',
+                description: 'Verifique as permissões do navegador.',
                 variant: 'destructive'
             })
         }
@@ -218,7 +197,7 @@ export function AddClientForm({ client }: { client?: Client }) {
         toast({
             variant: 'destructive',
             title: 'Estoque Insuficiente',
-            description: `Só existem ${selectedPrizeForAdd.quantity} unidades de ${selectedPrizeForAdd.name} em estoque.`
+            description: `Apenas ${selectedPrizeForAdd.quantity} disponíveis.`
         });
         return;
     }
@@ -252,93 +231,91 @@ export function AddClientForm({ client }: { client?: Client }) {
 
   if (isLoading) {
     return (
-       <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Carregando dados...</span>
+       <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Completo</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-sm font-semibold">Nome Completo</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: João da Silva" {...field} />
+                <Input placeholder="Ex: João da Silva" className="h-11" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs" />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone (com atalho para WhatsApp)</FormLabel>
-              <FormControl>
-                <Input type="tel" placeholder="Ex: 11987654321" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-sm font-semibold">Telefone</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="Ex: 11987654321" className="h-11" {...field} />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="route"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-sm font-semibold">Rota</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger className="h-11">
+                                <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {routes?.map(route => (
+                                <SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+        </div>
+
         <FormField
           control={form.control}
           name="address"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-sm font-semibold">Endereço</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Rua das Flores, 123" {...field} />
+                <Input placeholder="Ex: Rua das Flores, 123" className="h-11" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs" />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="city"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cidade / Estado</FormLabel>
+            <FormItem className="space-y-1">
+              <FormLabel className="text-sm font-semibold">Cidade / Estado</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Goiânia - GO" {...field} />
+                <Input placeholder="Ex: Goiânia - GO" className="h-11" {...field} />
               </FormControl>
-              <FormDescription>
-                A cidade e o estado onde o cliente está localizado.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="route"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rota</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma rota" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {routes?.map(route => (
-                            <SelectItem key={route.id} value={route.name}>{route.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-              <FormDescription>
-                Selecione a rota que este cliente pertence.
-              </FormDescription>
-              <FormMessage />
+              <FormMessage className="text-xs" />
             </FormItem>
           )}
         />
@@ -348,12 +325,12 @@ export function AddClientForm({ client }: { client?: Client }) {
               control={form.control}
               name="raspinha"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor da Raspinha (R$)</FormLabel>
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-sm font-semibold">Raspinha (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="Ex: 2.00" {...field} />
+                    <Input type="number" step="0.01" className="h-11" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -361,72 +338,88 @@ export function AddClientForm({ client }: { client?: Client }) {
               control={form.control}
               name="comissao"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comissão (%)</FormLabel>
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-sm font-semibold">Comissão (%)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Ex: 25" {...field} />
+                    <Input type="number" className="h-11" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
         </div>
 
-        <FormItem>
-            <FormLabel>Localização</FormLabel>
-            <Button type="button" variant="outline" className="w-full" onClick={handleLocation} disabled={isLocating}>
+        <FormItem className="space-y-1">
+            <FormLabel className="text-sm font-semibold">Localização GPS</FormLabel>
+            <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full h-11 border-primary/30 text-primary hover:bg-primary/5" 
+                onClick={handleLocation} 
+                disabled={isLocating}
+            >
                 {isLocating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                 {locationStatus}
             </Button>
         </FormItem>
 
-        <Separator />
+        <Separator className="my-2" />
 
         <div className="space-y-4">
-            <h4 className="font-medium">Prêmios Iniciais (Kit)</h4>
-            <div className="space-y-2">
+            <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                Kit de Prêmios
+            </h4>
+            
+            <div className="flex flex-wrap gap-2">
                 {initialPrizes.map(p => (
-                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm">
-                        <span>{p.prizeName} <span className="text-muted-foreground">x{p.quantity}</span></span>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePrize(p.prizeId)}>
-                            <X className="h-4 w-4"/>
+                    <Badge key={p.prizeId} variant="secondary" className="pl-3 pr-1 py-1 gap-1 text-xs">
+                        {p.prizeName} x{p.quantity}
+                        <Button type="button" variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => handleRemovePrize(p.prizeId)}>
+                            <X className="h-3 w-3"/>
+                        </Button>
+                    </Badge>
+                ))}
+                {initialPrizes.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic w-full text-center py-2 border border-dashed rounded-md bg-muted/20">
+                        Nenhum item no kit inicial.
+                    </p>
+                )}
+            </div>
+
+            <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FormItem className="space-y-1">
+                        <FormLabel className="text-xs">Item</FormLabel>
+                        <Select onValueChange={(id) => setSelectedPrizeForAdd(prizes?.find(p => p.id === id) || null)} value={selectedPrizeForAdd?.id || ''}>
+                            <FormControl>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Escolher" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {prizes?.map(prize => (
+                                    <SelectItem key={prize.id} value={prize.id!}>
+                                        {prize.name} ({prize.quantity})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormItem>
+                    <div className="flex gap-2 items-end">
+                        <FormItem className="flex-1 space-y-1">
+                            <FormLabel className="text-xs">Qtd.</FormLabel>
+                            <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="h-9 text-xs" />
+                        </FormItem>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleAddPrize} disabled={!selectedPrizeForAdd} className="h-9">
+                            <Plus className="h-4 w-4 mr-1" /> Add
                         </Button>
                     </div>
-                ))}
-                {initialPrizes.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Nenhum prêmio adicionado ao kit inicial.</p>}
-            </div>
-            <div className="flex gap-2 items-end">
-                <FormItem className="flex-1">
-                    <FormLabel>Adicionar Prêmio</FormLabel>
-                    <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione um prêmio" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {prizes?.map(prize => (
-                                <SelectItem key={prize.id} value={prize.id!}>
-                                     <div className="flex justify-between items-center w-full gap-4">
-                                        <span className="truncate">{prize.name}</span>
-                                        <span className="text-muted-foreground text-xs flex-shrink-0">Estoque: {prize.quantity}</span>
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </FormItem>
-                <FormItem className="w-24">
-                    <FormLabel>Qtd.</FormLabel>
-                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} />
-                </FormItem>
-                <Button type="button" variant="secondary" onClick={handleAddPrize} disabled={!selectedPrizeForAdd}>Adicionar</Button>
+                </div>
             </div>
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? 'Salvar Alterações' : 'Salvar Cliente'}
+        <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-base font-bold shadow-xl">
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditing ? 'Atualizar Cliente' : 'Finalizar Cadastro')}
         </Button>
       </form>
     </Form>
