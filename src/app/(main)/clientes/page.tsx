@@ -21,7 +21,9 @@ import { differenceInDays } from 'date-fns';
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
-import { addDoc, collection, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -407,7 +409,7 @@ export default function ClientesPage() {
         grossRevenue: chargeCalculations.grossRevenue,
         commissionValue: chargeCalculations.commissionValue,
         netRevenue: chargeCalculations.finalNetRevenue,
-        discount: values.discount,
+        discount: values.discount || 0,
         kitStatus: values.kitStatus,
         cartelaStatus: values.cartelaStatus,
         prizesGiven: prizesForCharge,
@@ -416,13 +418,33 @@ export default function ClientesPage() {
     };
     
     try {
-      const docRef = await addDoc(collection(firestore, 'cobrancas'), newCharge);
+      // Get a new doc ID upfront
+      const newChargeRef = doc(collection(firestore, 'cobrancas'));
+      const chargeId = newChargeRef.id;
+
+      // Initiate the writes without awaiting
+      setDoc(newChargeRef, newCharge)
+        .catch(async (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: newChargeRef.path,
+                operation: 'create',
+                requestResourceData: newCharge,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
       
-      // Atomically update prize stock
+      // Update prize stock
       for (const prizeGiven of prizesForCharge) {
         const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
-        await updateDoc(prizeDocRef, {
+        updateDoc(prizeDocRef, {
             quantity: increment(-prizeGiven.quantity)
+        }).catch(async (error) => {
+            const permissionError = new FirestorePermissionError({
+                path: prizeDocRef.path,
+                operation: 'update',
+                requestResourceData: { quantity: increment(-prizeGiven.quantity) },
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
       }
 
@@ -431,10 +453,10 @@ export default function ClientesPage() {
         description: `A cobrança para ${selectedClient?.name} foi registrada com sucesso.`,
       });
       
-      handlePrintReceipt({ ...newCharge, id: docRef.id });
+      // Proceed with printing immediately using the ID we generated
+      handlePrintReceipt({ ...newCharge, id: chargeId });
 
-    } catch (error) {
-      console.error("Error saving charge: ", error);
+    } catch (error: any) {
       toast({
         title: 'Erro!',
         description: 'Não foi possível salvar a cobrança.',
@@ -819,7 +841,7 @@ export default function ClientesPage() {
                     <AlertDialogDescription>
                         Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
                         <span className="font-bold"> {clientToDelete?.name} </span>
-                        e todos os seus dados associados.
+                        e todos os seus data associados.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
