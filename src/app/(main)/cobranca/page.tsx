@@ -1,14 +1,14 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2, Camera } from "lucide-react";
+import { DollarSign, Filter, Printer, Calendar as CalendarIcon, Trash2, Loader2, Camera, MapPin, Calendar, Package, Layers, Gift } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { Route, Cobranca } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -20,6 +20,8 @@ import { deleteDoc, doc } from "firebase/firestore";
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -38,11 +40,8 @@ export default function CobrancaPage() {
     const [date, setDate] = useState<DateRange | undefined>();
     const { toast } = useToast();
 
-    // Delete dialog state
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [cobrancaToDelete, setCobrancaToDelete] = useState<Cobranca | null>(null);
-
-    // Image preview state
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const isLoading = isLoadingCobrancas || isLoadingRoutes;
@@ -94,7 +93,7 @@ export default function CobrancaPage() {
 
 
     const handlePrint = () => {
-        const reportContentNode = document.getElementById('report-content');
+        const reportContentNode = document.getElementById('report-content-desktop');
         if (!reportContentNode) return;
 
         const printWindow = window.open('', '_blank');
@@ -105,13 +104,6 @@ export default function CobrancaPage() {
 
         const pageStyles = document.head.innerHTML;
         const contentClone = reportContentNode.cloneNode(true) as HTMLElement;
-        const printHeader = contentClone.querySelector('.print-only-header');
-        
-        if (printHeader) {
-            printHeader.classList.remove('hidden');
-        }
-        
-        // Remove actions column header and cells from clone
         contentClone.querySelectorAll('.actions-col').forEach(el => el.remove());
 
         printWindow.document.write(`
@@ -144,10 +136,7 @@ export default function CobrancaPage() {
             return;
         }
         
-        const receiptHtml = ReactDOMServer.renderToString(
-          <Receipt cobranca={cobranca} />
-        );
-
+        const receiptHtml = ReactDOMServer.renderToString(<Receipt cobranca={cobranca} />);
         const pageStyles = document.head.innerHTML;
 
         printWindow.document.write(`
@@ -156,27 +145,11 @@ export default function CobrancaPage() {
                     <title>Recibo - ${cobranca.clientName}</title>
                     ${pageStyles}
                     <style>
-                        @media print {
-                            @page { 
-                                size: 80mm auto;
-                                margin: 0;
-                            }
-                            body {
-                                -webkit-print-color-adjust: exact !important;
-                                print-color-adjust: exact !important;
-                            }
-                        }
-                        body {
-                            width: 80mm;
-                            margin: 0;
-                            padding: 0;
-                            background: white;
-                        }
+                        @media print { @page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+                        body { width: 80mm; margin: 0; padding: 0; background: white; }
                     </style>
                 </head>
-                <body class="light">
-                    ${receiptHtml}
-                </body>
+                <body class="light">${receiptHtml}</body>
             </html>
         `);
 
@@ -194,24 +167,14 @@ export default function CobrancaPage() {
 
     const handleConfirmDelete = async () => {
         if (!cobrancaToDelete || !firestore) return;
-        
         try {
             await deleteDoc(doc(firestore, 'cobrancas', cobrancaToDelete.id!));
             triggerSuccess();
-            toast({
-                title: 'Cobrança Excluída!',
-                description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`,
-                variant: 'destructive'
-            });
+            toast({ title: 'Cobrança Excluída!', description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`, variant: 'destructive' });
         } catch (error) {
             console.error("Error deleting charge:", error);
-            toast({
-                title: 'Erro!',
-                description: `Não foi possível excluir a cobrança.`,
-                variant: 'destructive'
-            });
+            toast({ title: 'Erro!', description: `Não foi possível excluir a cobrança.`, variant: 'destructive' });
         }
-
         setIsDeleteDialogOpen(false);
         setCobrancaToDelete(null);
     };
@@ -225,85 +188,129 @@ export default function CobrancaPage() {
     }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 mobile-container">
         <div className="flex items-center gap-3 print:hidden">
-            <DollarSign className="h-8 w-8 text-muted-foreground" />
-            <h1 className="text-3xl font-bold font-headline">
-                Histórico de Cobranças
-            </h1>
+            <DollarSign className="h-7 w-7 text-primary" />
+            <h1 className="text-2xl font-bold font-headline">Histórico</h1>
         </div>
 
-        <Card className="print:shadow-none print:border-none">
-            <CardHeader className="print:hidden">
-                <div className="flex sm:flex-row flex-col sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>Cobranças Realizadas</CardTitle>
-                        <CardTitle>Histórico Geral</CardTitle>
-                    </div>
-                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                         <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            <Select value={selectedRoute} onValueChange={setSelectedRoute}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filtrar por Rota" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {routeOptions.map(route => (
-                                        <SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                id="date"
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full sm:w-[260px] justify-start text-left font-normal",
-                                  !date && "text-muted-foreground"
-                                )}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date?.from ? (
-                                  date.to ? (
-                                    <>
-                                      {format(date.from, "dd/MM/yyyy")} -{" "}
-                                      {format(date.to, "dd/MM/yyyy")}
-                                    </>
-                                  ) : (
-                                    format(date.from, "dd/MM/yyyy")
-                                  )
-                                ) : (
-                                  <span>Selecione um período</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end">
-                              <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={date?.from}
-                                selected={date}
-                                onSelect={setDate}
-                                numberOfMonths={2}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        <Button onClick={handlePrint} className="w-full sm:w-auto">
-                            <Printer className="mr-2 h-4 w-4" />
-                            Imprimir
+        <div className="flex flex-col sm:flex-row gap-2 print:hidden">
+            <div className="flex flex-1 gap-2">
+                <Select value={selectedRoute} onValueChange={setSelectedRoute}>
+                    <SelectTrigger className="flex-1 h-11"><SelectValue placeholder="Rota" /></SelectTrigger>
+                    <SelectContent>
+                        {routeOptions.map(route => (
+                            <SelectItem key={route} value={route}>{route === 'all' ? 'Todas Rotas' : route}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("flex-1 h-11 justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {date?.from ? (date.to ? `${format(date.from, "dd/MM")} - ${format(date.to, "dd/MM")}` : format(date.from, "dd/MM")) : <span>Período</span>}
                         </Button>
-                    </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                        <CalendarComponent initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={1} />
+                    </PopoverContent>
+                </Popover>
+            </div>
+            <Button onClick={handlePrint} className="h-11 w-full sm:w-auto"><Printer className="mr-2 h-4 w-4" />Imprimir Relatório</Button>
+        </div>
+
+        {/* --- MOBILE VIEW (CARDS) --- */}
+        <div className="grid gap-4 md:hidden">
+            {filteredCobrancas.length > 0 ? (
+                filteredCobrancas.map((cobranca) => (
+                    <Card key={cobranca.id} className="bg-card/80 shadow-md border-border/40 overflow-hidden">
+                        <CardContent className="p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-base font-bold text-accent">{cobranca.clientName}</h3>
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                                        <MapPin className="h-3 w-3" />
+                                        <span>{cobranca.route}</span>
+                                        <span className="mx-1">•</span>
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{formatDate(cobranca.createdAt)}</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-1">
+                                    {(cobranca.frontCardImageUrl || cobranca.backCardImageUrl) && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-muted/50" onClick={() => setPreviewImage(cobranca.frontCardImageUrl || cobranca.backCardImageUrl!)}>
+                                            <Camera className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-muted/50" onClick={() => handlePrintReceipt(cobranca)}>
+                                        <Printer className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-destructive/10 text-destructive" onClick={() => handleDeleteRequest(cobranca)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5"><Package className="h-3 w-3 text-primary" /><span>Kit: {cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></div>
+                                    <div className="flex items-center gap-1.5"><Layers className="h-3 w-3 text-primary" /><span>Cartela: {cobranca.cartelaStatus === 'nova' ? 'Nova' : 'Manteve'}</span></div>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5"><Gift className="h-3 w-3 text-primary" />
+                                        <span className="truncate">
+                                            {cobranca.prizesGiven && cobranca.prizesGiven.length > 0 ? `${cobranca.prizesGiven.length} prêmios` : 'Sem prêmios'}
+                                        </span>
+                                    </div>
+                                    <div className="font-semibold">Rasp: {cobranca.scratchedAmount} un.</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-muted/30 rounded-lg p-2.5 space-y-1 text-[11px]">
+                                <div className="flex justify-between"><span>Bruto</span><span>{formatCurrency(cobranca.grossRevenue)}</span></div>
+                                <div className="flex justify-between text-destructive"><span>Comissão</span><span>-{formatCurrency(cobranca.commissionValue)}</span></div>
+                                {cobranca.discount ? (
+                                    <div className="flex justify-between text-destructive"><span>Desconto</span><span>-{formatCurrency(cobranca.discount)}</span></div>
+                                ) : null}
+                                <div className="flex justify-between font-bold text-sm text-primary pt-1 border-t mt-1">
+                                    <span>LÍQUIDO</span>
+                                    <span>{formatCurrency(cobranca.netRevenue)}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))
+            ) : (
+                <div className="text-center py-10 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                    Nenhuma cobrança encontrada.
                 </div>
-            </CardHeader>
-            <CardContent id="report-content">
-                 <div className="hidden print:block mb-6 print-only-header">
-                    <h2 className="text-2xl font-bold">Relatório de Cobranças</h2>
-                    <div className="text-sm text-muted-foreground">
-                        <p><strong>Rota:</strong> {selectedRoute === 'all' ? 'Todas as Rotas' : selectedRoute}</p>
-                        {date?.from && <p><strong>Período:</strong> {format(date.from, "dd/MM/yyyy")} {date.to ? `a ${format(date.to, "dd/MM/yyyy")}`: ''}</p>}
-                    </div>
+            )}
+            
+            {filteredCobrancas.length > 0 && (
+                 <Card className="bg-primary/5 border-primary/20">
+                    <CardContent className="p-4">
+                        <h4 className="font-bold text-xs uppercase tracking-wider mb-2 text-primary">Resumo do Período</h4>
+                        <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between"><span>Total Raspadas:</span><span className="font-bold">{reportTotals.totalScratched}</span></div>
+                            <div className="flex justify-between"><span>Total Bruto:</span><span className="font-bold">{formatCurrency(reportTotals.totalGross)}</span></div>
+                            <div className="flex justify-between text-destructive"><span>Total Comissão:</span><span className="font-bold">-{formatCurrency(reportTotals.totalCommission)}</span></div>
+                            <div className="flex justify-between text-destructive"><span>Total Desconto:</span><span className="font-bold">-{formatCurrency(reportTotals.totalDiscount)}</span></div>
+                            <Separator className="my-1.5" />
+                            <div className="flex justify-between text-base font-bold text-primary"><span>TOTAL LÍQUIDO:</span><span>{formatCurrency(reportTotals.totalNet)}</span></div>
+                        </div>
+                    </CardContent>
+                 </Card>
+            )}
+        </div>
+
+        {/* --- DESKTOP VIEW (TABLE) --- */}
+        <Card className="hidden md:block">
+            <CardContent className="p-0" id="report-content-desktop">
+                <div className="hidden print:block p-6 border-b">
+                    <h2 className="text-xl font-bold">Relatório de Cobranças</h2>
+                    <p className="text-sm text-muted-foreground">Rota: {selectedRoute === 'all' ? 'Todas' : selectedRoute}</p>
                 </div>
                 <Table>
                     <TableHeader>
@@ -311,126 +318,70 @@ export default function CobrancaPage() {
                             <TableHead>Cliente</TableHead>
                             <TableHead>Rota</TableHead>
                             <TableHead className="text-center">Data</TableHead>
-                            <TableHead className="print:hidden">Status</TableHead>
-                            <TableHead className="print:hidden">Prêmios</TableHead>
-                            <TableHead className="print:hidden actions-col">Fotos</TableHead>
-                            <TableHead className="text-right">Qtd. Rasp.</TableHead>
-                            <TableHead className="text-right">Total Bruto</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Qtd.</TableHead>
+                            <TableHead className="text-right">Bruto</TableHead>
                             <TableHead className="text-right">Comissão</TableHead>
                             <TableHead className="text-right">Desconto</TableHead>
-                            <TableHead className="text-right">Valor Líquido</TableHead>
-                            <TableHead className="text-right print:hidden actions-col">Ações</TableHead>
+                            <TableHead className="text-right">Líquido</TableHead>
+                            <TableHead className="text-right actions-col">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredCobrancas.length > 0 ? (
-                            filteredCobrancas
-                                .map((cobranca) => (
-                                    <TableRow key={cobranca.id}>
-                                        <TableCell className="font-medium">{cobranca.clientName}</TableCell>
-                                        <TableCell className="text-muted-foreground">{cobranca.route}</TableCell>
-                                        <TableCell className="text-center text-muted-foreground">{formatDate(cobranca.createdAt)}</TableCell>
-                                        <TableCell className="print:hidden">
-                                            <div className="flex flex-col text-xs text-muted-foreground">
-                                                {cobranca.kitStatus && <span>Kit: <span className="font-medium text-foreground">{cobranca.kitStatus === 'novo' ? 'Novo' : 'Manteve'}</span></span>}
-                                                {cobranca.cartelaStatus && <span>Cartela: <span className="font-medium text-foreground">{cobranca.cartelaStatus === 'nova' ? 'Nova' : 'Manteve'}</span></span>}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="print:hidden">
-                                            {cobranca.prizesGiven && cobranca.prizesGiven.length > 0 ? (
-                                                <ul className="text-xs list-disc list-inside">
-                                                    {cobranca.prizesGiven.map(p => <li key={p.prizeId}>{p.prizeName} (x{p.quantity})</li>)}
-                                                </ul>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">Nenhum</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="print:hidden actions-col">
-                                            <div className="flex items-center gap-1">
-                                                {cobranca.frontCardImageUrl && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(cobranca.frontCardImageUrl!)}>
-                                                        <Camera className="h-4 w-4" />
-                                                        <span className="sr-only">Ver Foto da Frente</span>
-                                                    </Button>
-                                                )}
-                                                {cobranca.backCardImageUrl && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(cobranca.backCardImageUrl!)}>
-                                                        <Camera className="h-4 w-4 text-accent" />
-                                                        <span className="sr-only">Ver Foto do Verso</span>
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">{cobranca.scratchedAmount}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(cobranca.grossRevenue)}</TableCell>
-                                        <TableCell className="text-right text-destructive">-{formatCurrency(cobranca.commissionValue)}</TableCell>
-                                        <TableCell className="text-right text-destructive">{cobranca.discount ? `-${formatCurrency(cobranca.discount)}` : formatCurrency(0)}</TableCell>
-                                        <TableCell className="text-right font-semibold text-primary">{formatCurrency(cobranca.netRevenue)}</TableCell>
-                                        <TableCell className="print:hidden actions-col">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePrintReceipt(cobranca)}>
-                                                    <Printer className="h-4 w-4" />
-                                                    <span className="sr-only">Imprimir Recibo</span>
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteRequest(cobranca)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                    <span className="sr-only">Excluir Cobrança</span>
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={12} className="h-24 text-center">
-                                    Nenhuma cobrança registrada para os filtros selecionados.
+                        {filteredCobrancas.map((c) => (
+                            <TableRow key={c.id}>
+                                <TableCell className="font-medium">{c.clientName}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{c.route}</TableCell>
+                                <TableCell className="text-center text-xs">{formatDate(c.createdAt)}</TableCell>
+                                <TableCell className="text-[10px] space-y-0.5">
+                                    <div className="flex items-center gap-1 opacity-70">Kit: {c.kitStatus}</div>
+                                    <div className="flex items-center gap-1 opacity-70">Card: {c.cartelaStatus}</div>
+                                </TableCell>
+                                <TableCell className="text-right font-mono">{c.scratchedAmount}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(c.grossRevenue)}</TableCell>
+                                <TableCell className="text-right text-destructive">-{formatCurrency(c.commissionValue)}</TableCell>
+                                <TableCell className="text-right text-destructive">{c.discount ? `-${formatCurrency(c.discount)}` : '-'}</TableCell>
+                                <TableCell className="text-right font-bold text-primary">{formatCurrency(c.netRevenue)}</TableCell>
+                                <TableCell className="text-right actions-col">
+                                    <div className="flex justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePrintReceipt(c)}><Printer className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteRequest(c)}><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
-                        )}
+                        ))}
                     </TableBody>
-                    {filteredCobrancas.length > 0 && (
-                        <TableFooter className="font-semibold border-t">
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-left print:col-span-3">Total</TableCell>
-                                <TableCell className="text-right">{reportTotals.totalScratched}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(reportTotals.totalGross)}</TableCell>
-                                <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalCommission)}</TableCell>
-                                <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalDiscount)}</TableCell>
-                                <TableCell className="text-right text-primary">{formatCurrency(reportTotals.totalNet)}</TableCell>
-                                <TableCell className="print:hidden actions-col"></TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    )}
+                    <TableFooter>
+                        <TableRow>
+                            <TableCell colSpan={4}>Totais</TableCell>
+                            <TableCell className="text-right">{reportTotals.totalScratched}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(reportTotals.totalGross)}</TableCell>
+                            <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalCommission)}</TableCell>
+                            <TableCell className="text-right text-destructive">-{formatCurrency(reportTotals.totalDiscount)}</TableCell>
+                            <TableCell className="text-right font-bold text-primary">{formatCurrency(reportTotals.totalNet)}</TableCell>
+                            <TableCell className="actions-col"></TableCell>
+                        </TableRow>
+                    </TableFooter>
                 </Table>
             </CardContent>
         </Card>
+
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta ação não pode ser desfeita. A cobrança para <span className="font-bold">{cobrancaToDelete?.clientName}</span> será excluída permanentemente.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setCobrancaToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                        className={buttonVariants({ variant: "destructive" })}
-                        onClick={handleConfirmDelete}
-                    >
-                        Excluir
-                    </AlertDialogAction>
+            <AlertDialogContent className="w-[90vw] rounded-lg">
+                <AlertDialogHeader><AlertDialogTitle>Excluir?</AlertDialogTitle><AlertDialogDescription>Deseja remover a cobrança de {cobrancaToDelete?.clientName}?</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className={cn(buttonVariants({ variant: "destructive" }))} onClick={handleConfirmDelete}>Excluir</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
         <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Visualizar Imagem</DialogTitle>
-                </DialogHeader>
+            <DialogContent className="max-w-3xl w-[95vw] p-2 rounded-lg">
+                <DialogHeader className="p-2"><DialogTitle>Foto da Cartela</DialogTitle></DialogHeader>
                 {previewImage && (
-                    <div className="relative aspect-video w-full">
-                        <Image src={previewImage} alt="Visualização da cartela" fill className="object-contain" />
+                    <div className="relative aspect-[4/3] w-full">
+                        <Image src={previewImage} alt="Foto" fill className="object-contain rounded-md" />
                     </div>
                 )}
             </DialogContent>
