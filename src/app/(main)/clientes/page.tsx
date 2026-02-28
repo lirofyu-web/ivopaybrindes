@@ -24,6 +24,7 @@ import { useCollection, useFirestore } from '@/firebase';
 import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 
 function formatCurrency(value: number) {
@@ -36,10 +37,10 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg
       {...props}
       viewBox="0 0 24 24"
-      fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.438 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.558 0 11.894-5.335 11.897-11.893a11.83 11.83 0 00-3.481-8.417z"/>
+        <circle cx="12" cy="12" r="12" fill="#25D366"/>
+        <path fill="#FFF" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.438 9.884-9.885 9.884"/>
     </svg>
   );
 }
@@ -66,53 +67,53 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
 
   return (
     <Card className="bg-card/80 shadow-lg border-border/50">
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         <div className="flex justify-between items-start">
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1 min-w-0 pr-2">
                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg font-bold text-accent">{client.name}</h3>
-                    <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-xs font-normal">
+                    <h3 className="text-base sm:text-lg font-bold text-accent truncate max-w-full">{client.name}</h3>
+                    <Badge variant={visitStatus === 'visited' ? 'success' : 'destructive'} className="text-[10px] sm:text-xs font-normal">
                       {visitStatus === 'visited' ? 'Visitado' : 'Não Visitado'}
                     </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <p>{client.route}</p>
                 </div>
             </div>
-            <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-600 transition-colors">
-                <WhatsAppIcon className="w-8 h-8"/>
+            <a href={`https://wa.me/${client.phone}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                <WhatsAppIcon className="w-10 h-10"/>
                 <span className="sr-only">WhatsApp</span>
             </a>
         </div>
 
-        <div className="space-y-2 text-sm text-foreground/80">
+        <div className="space-y-2 text-xs sm:text-sm text-foreground/80">
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block hover:underline">
-                <div className="flex items-center gap-3">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span>{client.address}, {client.city}</span>
+                <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">{client.address}, {client.city}</span>
                 </div>
             </a>
             <div className="flex items-center gap-3">
-                <DollarSign className="w-4 h-4 text-muted-foreground" />
+                <DollarSign className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <span>Raspinha: {formatCurrency(client.raspinha)}</span>
             </div>
             <div className="flex items-center gap-3">
-                <Percent className="w-4 h-4 text-muted-foreground" />
+                <Percent className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <span>Comissão: {client.comissao}%</span>
             </div>
         </div>
 
         <div className="flex items-center gap-2 pt-2">
-            <Button size="sm" className="flex-1" onClick={() => onChargeClick(client)}>
-                <DollarSign className="mr-2 h-4 w-4" />
-                Nova Cobrança
+            <Button size="sm" className="flex-1 text-xs" onClick={() => onChargeClick(client)}>
+                <DollarSign className="mr-1 h-3.5 w-3.5" />
+                Cobrança
             </Button>
-            <Link href={`/clientes/editar/${client.id}`}>
-              <Button size="icon" variant="outline" className="border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 hover:text-yellow-400">
+            <Link href={`/clientes/editar/${client.id}`} className="flex-shrink-0">
+              <Button size="icon" variant="outline" className="h-9 w-9 border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500">
                   <Edit className="h-4 w-4" />
               </Button>
             </Link>
-            <Button size="icon" variant="outline" className="border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400" onClick={() => onDeleteClick(client)}>
+            <Button size="icon" variant="outline" className="h-9 w-9 border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-500" onClick={() => onDeleteClick(client)}>
                 <Trash2 className="h-4 w-4" />
             </Button>
         </div>
@@ -389,6 +390,7 @@ export default function ClientesPage() {
     if (!selectedClient || !firestore) return;
     setIsSubmittingCharge(true);
     
+    // Create a clean data object to avoid undefined values which Firestore rejects
     const chargeData: any = {
         clientId: selectedClient.id!,
         clientName: selectedClient.name,
@@ -403,6 +405,7 @@ export default function ClientesPage() {
         discount: values.discount || 0,
     };
     
+    // Explicitly add optional fields only if they have values
     if (values.kitStatus) chargeData.kitStatus = values.kitStatus;
     if (values.cartelaStatus) chargeData.cartelaStatus = values.cartelaStatus;
     if (values.frontCardImageUrl) chargeData.frontCardImageUrl = values.frontCardImageUrl;
@@ -415,6 +418,7 @@ export default function ClientesPage() {
 
       await setDoc(newChargeRef, chargeData);
       
+      // Update prize stocks
       for (const prizeGiven of prizesForCharge) {
         const prizeDocRef = doc(firestore, 'premios', prizeGiven.prizeId);
         await updateDoc(prizeDocRef, {
@@ -499,20 +503,14 @@ export default function ClientesPage() {
 
   if (isLoading) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4">
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <Users className="h-8 w-8 text-muted-foreground" />
-                    <h1 className="text-3xl font-bold font-headline">
+                    <h1 className="text-2xl font-bold font-headline">
                         Gerenciar Clientes
                     </h1>
                 </div>
-                <Link href="/clientes/novo">
-                    <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Novo Cliente
-                    </Button>
-                </Link>
             </div>
             <div className="text-center py-12 text-muted-foreground">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin" />
@@ -523,17 +521,17 @@ export default function ClientesPage() {
   }
 
   return (
-    <div className="space-y-6 mobile-container">
+    <div className="space-y-4 mobile-container">
         <canvas ref={canvasRef} className="hidden"></canvas>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
                 <Users className="h-8 w-8 text-muted-foreground" />
-                <h1 className="text-2xl sm:text-3xl font-bold font-headline">
-                    Gerenciar Clientes
+                <h1 className="text-2xl sm:text-3xl font-bold font-headline text-left">
+                    Clientes
                 </h1>
             </div>
             <Link href="/clientes/novo" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto h-11">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Novo Cliente
                 </Button>
@@ -544,20 +542,20 @@ export default function ClientesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
                 placeholder="Buscar por nome ou rota..."
-                className="pl-10"
+                className="pl-10 h-11"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6">
             {Object.entries(clientsByRoute).sort(([routeA], [routeB]) => routeA.localeCompare(routeB)).map(([routeName, { description, clients: routeClients }]) => (
-                <div key={routeName} className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b border-border pb-2 px-1">
+                <div key={routeName} className="space-y-3">
+                    <h2 className="text-base font-semibold border-b border-border pb-1.5 px-1 flex items-baseline gap-2">
                         {routeName}
-                        {description && <span className="text-xs font-normal text-muted-foreground ml-2">- {description}</span>}
+                        {description && <span className="text-[10px] font-normal text-muted-foreground truncate">- {description}</span>}
                     </h2>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 px-1">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {routeClients.map(client => (
                             <ClientCard 
                                 key={client.id} 
@@ -576,27 +574,28 @@ export default function ClientesPage() {
                 </div>
             )}
         </div>
+
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
-            <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-y-auto p-4 sm:p-6">
-                <DialogHeader>
-                    <DialogTitle>Nova Cobrança para {selectedClient?.name}</DialogTitle>
-                    <DialogDescription>
-                    Insira os detalhes da venda para calcular e salvar a cobrança.
+            <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-lg">
+                <DialogHeader className="mb-4">
+                    <DialogTitle className="text-lg">Cobrança: {selectedClient?.name}</DialogTitle>
+                    <DialogDescription className="text-xs">
+                    Insira os detalhes da venda para calcular e salvar.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4 sm:space-y-6">
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <form onSubmit={form.handleSubmit(onChargeSubmit)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <FormField
                                 control={form.control}
                                 name="scratchedAmount"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Qtd. Raspadinhas</FormLabel>
+                                        <FormLabel className="text-xs">Qtd. Rasp.</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ex: 100" {...field} />
+                                            <Input type="number" placeholder="Ex: 100" className="h-10" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className="text-[10px]" />
                                     </FormItem>
                                 )}
                             />
@@ -605,11 +604,11 @@ export default function ClientesPage() {
                                 name="discount"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Desconto (R$)</FormLabel>
+                                        <FormLabel className="text-xs">Desconto (R$)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ex: 10,00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                                            <Input type="number" placeholder="0,00" className="h-10" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className="text-[10px]" />
                                     </FormItem>
                                 )}
                             />
@@ -617,13 +616,13 @@ export default function ClientesPage() {
                         
                         <Separator/>
                         
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <FormField
                                 control={form.control}
                                 name="kitStatus"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-2">
-                                        <FormLabel>Kit</FormLabel>
+                                    <FormItem className="space-y-1.5">
+                                        <FormLabel className="text-xs">Kit Brindes</FormLabel>
                                         <FormControl>
                                             <RadioGroup
                                                 onValueChange={field.onChange}
@@ -632,15 +631,14 @@ export default function ClientesPage() {
                                             >
                                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs sm:text-sm">Manteve kit</FormLabel>
+                                                    <FormLabel className="font-normal text-xs">Manteve</FormLabel>
                                                 </FormItem>
                                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="novo" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs sm:text-sm">Novo kit</FormLabel>
+                                                    <FormLabel className="font-normal text-xs">Recebeu Novo</FormLabel>
                                                 </FormItem>
                                             </RadioGroup>
                                         </FormControl>
-                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -648,8 +646,8 @@ export default function ClientesPage() {
                                 control={form.control}
                                 name="cartelaStatus"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-2">
-                                        <FormLabel>Cartela</FormLabel>
+                                    <FormItem className="space-y-1.5">
+                                        <FormLabel className="text-xs">Cartela</FormLabel>
                                         <FormControl>
                                             <RadioGroup
                                                 onValueChange={field.onChange}
@@ -658,15 +656,14 @@ export default function ClientesPage() {
                                             >
                                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="manteve" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs sm:text-sm">Manteve cartela</FormLabel>
+                                                    <FormLabel className="font-normal text-xs">Manteve</FormLabel>
                                                 </FormItem>
                                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                                     <FormControl><RadioGroupItem value="nova" /></FormControl>
-                                                    <FormLabel className="font-normal text-xs sm:text-sm">Nova cartela</FormLabel>
+                                                    <FormLabel className="font-normal text-xs">Recebeu Nova</FormLabel>
                                                 </FormItem>
                                             </RadioGroup>
                                         </FormControl>
-                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -675,68 +672,68 @@ export default function ClientesPage() {
                         <Separator/>
                         
                         <div className="space-y-3">
-                            <h4 className="font-medium text-sm">Prêmios que saíram</h4>
+                            <h4 className="font-medium text-xs">Prêmios que saíram</h4>
                             <div className="space-y-1.5">
                                 {prizesForCharge.map(p => (
-                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-xs">
-                                        <span>{p.prizeName} <span className="text-muted-foreground ml-1">x{p.quantity}</span></span>
-                                        <Button type="button" variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
-                                            <X className="h-3.5 w-3.5"/>
+                                    <div key={p.prizeId} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-[11px]">
+                                        <span className="truncate mr-2">{p.prizeName} <span className="text-muted-foreground ml-1">x{p.quantity}</span></span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemovePrizeFromCharge(p.prizeId)}>
+                                            <X className="h-4 w-4"/>
                                         </Button>
                                     </div>
                                 ))}
-                                {prizesForCharge.length === 0 && <p className="text-[10px] text-muted-foreground text-center py-1">Nenhum prêmio adicionado.</p>}
+                                {prizesForCharge.length === 0 && <p className="text-[10px] text-muted-foreground text-center py-1">Nenhum prêmio saiu.</p>}
                             </div>
                             <div className="flex gap-2 items-end">
-                                <FormItem className="flex-1">
-                                    <FormLabel className="text-xs">Prêmio</FormLabel>
+                                <FormItem className="flex-1 min-w-0">
+                                    <FormLabel className="text-[10px]">Prêmio</FormLabel>
                                     <Select onValueChange={(prizeId) => setSelectedPrizeForAdd(prizes?.find(p => p.id === prizeId) || null)} value={selectedPrizeForAdd?.id || ''}>
                                         <FormControl>
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9 text-xs">
                                                 <SelectValue placeholder="Selecione" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             {prizes?.filter(p => p.quantity > 0).map(prize => (
                                                 <SelectItem key={prize.id} value={prize.id!}>
-                                                    <div className="flex justify-between items-center w-full min-w-[180px]">
-                                                        <span className="truncate text-xs mr-4">{prize.name}</span>
-                                                        <span className="text-muted-foreground text-[10px] flex-shrink-0 bg-muted px-1.5 py-0.5 rounded">Est: {prize.quantity}</span>
+                                                    <div className="flex justify-between items-center w-full min-w-[200px] gap-2">
+                                                        <span className="truncate text-xs flex-1">{prize.name}</span>
+                                                        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground whitespace-nowrap">Est: {prize.quantity}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </FormItem>
-                                <FormItem className="w-14">
-                                    <FormLabel className="text-xs">Qtd.</FormLabel>
-                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="h-9 px-1.5" />
+                                <FormItem className="w-16">
+                                    <FormLabel className="text-[10px]">Qtd.</FormLabel>
+                                    <Input type="number" min="1" value={prizeQuantity} onChange={e => setPrizeQuantity(Number(e.target.value))} className="h-9 px-1.5 text-xs" />
                                 </FormItem>
-                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="h-9">Add</Button>
+                                <Button type="button" variant="secondary" onClick={handleAddPrizeToCharge} disabled={!selectedPrizeForAdd} size="sm" className="h-9 text-[11px] px-2">Add</Button>
                             </div>
                         </div>
                         
                         <Separator/>
 
                         <div className="space-y-3">
-                            <h4 className="font-medium text-sm">Fotos da Cartela <span className="text-[10px] text-muted-foreground font-normal ml-1">(Opcional)</span></h4>
+                            <h4 className="font-medium text-xs">Fotos da Cartela <span className="text-[10px] text-muted-foreground font-normal ml-1">(Opcional)</span></h4>
                             {isCameraOpen ? (
                                 <div className="space-y-3 p-3 border rounded-md">
-                                    <h5 className="font-semibold text-center text-xs">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
+                                    <h5 className="font-semibold text-center text-[10px]">Câmera - {cameraFor === 'front' ? 'Frente' : 'Verso'}</h5>
                                     {hasCameraPermission === false && (
                                         <Alert variant="destructive" className="p-2">
-                                            <AlertDescription className="text-xs">
+                                            <AlertDescription className="text-[10px]">
                                                 Permita o acesso à câmera nas configurações.
                                             </AlertDescription>
                                         </Alert>
                                     )}
                                     <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                                     <div className="flex gap-2 justify-center">
-                                        <Button type="button" size="sm" onClick={handleTakePhoto} disabled={hasCameraPermission !== true}>
-                                            <Camera className="mr-2 h-3.5 w-3.5" />
+                                        <Button type="button" size="sm" onClick={handleTakePhoto} disabled={hasCameraPermission !== true} className="text-xs h-9">
+                                            <Camera className="mr-1.5 h-3.5 w-3.5" />
                                             Tirar Foto
                                         </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsCameraOpen(false)}>Cancelar</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsCameraOpen(false)} className="text-xs h-9">Cancelar</Button>
                                     </div>
                                 </div>
                             ) : (
@@ -776,9 +773,9 @@ export default function ClientesPage() {
                         </div>
 
                         {scratchedAmount > 0 && selectedClient && (
-                            <div className="space-y-2 rounded-lg border bg-muted/50 p-3 sm:p-4">
-                                <h4 className="font-semibold text-center text-xs sm:text-sm">Resumo da Cobrança</h4>
-                                <div className="space-y-1.5 text-xs">
+                            <div className="space-y-2 rounded-lg border bg-muted/50 p-3">
+                                <h4 className="font-semibold text-center text-xs">Resumo da Cobrança</h4>
+                                <div className="space-y-1.5 text-[11px]">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Total Bruto</span>
                                         <span>{formatCurrency(chargeCalculations.grossRevenue)}</span>
@@ -797,12 +794,12 @@ export default function ClientesPage() {
                                 <Separator className="my-1.5" />
                                 <div className="flex justify-between items-center font-bold">
                                     <span className="text-[10px] uppercase">Líquido Empresa</span>
-                                    <span className="text-primary text-sm sm:text-base">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
+                                    <span className="text-primary text-sm">{formatCurrency(chargeCalculations.finalNetRevenue)}</span>
                                 </div>
                             </div>
                         )}
 
-                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-11 sm:h-10">
+                        <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-12 text-sm">
                             {isSubmittingCharge && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Salvar Cobrança
                         </Button>
@@ -810,10 +807,11 @@ export default function ClientesPage() {
                 </Form>
             </DialogContent>
         </Dialog>
+
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent className="w-[90vw] rounded-lg">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogTitle>Excluir Cliente?</AlertDialogTitle>
                     <AlertDialogDescription className="text-xs sm:text-sm">
                         Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
                         <span className="font-bold"> {clientToDelete?.name} </span>.

@@ -79,7 +79,7 @@
 
 @layer components {
   .mobile-container {
-    @apply px-1 sm:px-6 w-full max-w-7xl mx-auto;
+    @apply px-2 sm:px-6 w-full max-w-7xl mx-auto;
   }
 }
 
@@ -90,10 +90,18 @@
   }
   
   table th, table td {
-    @apply px-1 py-2 text-[11px] leading-tight;
+    @apply px-1 py-1.5 text-[10px] leading-tight;
+  }
+
+  table th {
+    @apply font-bold uppercase;
   }
 
   .font-headline {
-    @apply text-center w-full block;
+    @apply text-center w-full block text-xl;
+  }
+
+  .card-mobile-padding {
+    @apply p-3;
   }
 }

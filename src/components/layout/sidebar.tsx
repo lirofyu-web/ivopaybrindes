@@ -45,14 +45,16 @@ export default function AppSidebar() {
       setOpenMobile(false);
     }
     
-    // Attempt to go fullscreen on interaction
+    // Request fullscreen on interaction for a better app experience
     const elem = document.documentElement;
     if (!document.fullscreenElement) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(() => {});
-      } else if ((elem as any).webkitRequestFullscreen) {
-        (elem as any).webkitRequestFullscreen();
-      }
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch((err) => {
+                console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else if ((elem as any).webkitRequestFullscreen) {
+            (elem as any).webkitRequestFullscreen();
+        }
     }
   };
 
