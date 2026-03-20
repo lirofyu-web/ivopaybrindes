@@ -1,16 +1,16 @@
+
 'use client';
 
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
 const navItems = [
-    { href: '/', label: 'Dashboard' },
     { href: '/clientes', label: 'Clientes' },
     { href: '/clientes/novo', label: 'Novo Cliente' },
     { href: '/rotas', label: 'Rotas' },
     { href: '/mapa', label: 'Mapa' },
     { href: '/premios', label: 'Prêmios' },
-    { href: '/cobranca', label: 'Cobrança' },
+    { href: '/cobranca', label: 'Histórico' },
     { href: '/relatorios', label: 'Relatórios' },
     { href: '/despesas', label: 'Despesas' },
     { href: '/configuracoes', label: 'Configurações' },
@@ -27,7 +27,7 @@ export function PageTitle() {
         if (currentPath) {
             return currentPath.label;
         }
-        // Handle nested routes like /clientes/edit/1
+        // Handle nested routes
         const parentPath = navItems.find(item => item.href !== '/' && pathname.startsWith(item.href));
         if (parentPath) {
             return parentPath.label;
