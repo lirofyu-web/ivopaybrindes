@@ -22,7 +22,7 @@ import { differenceInDays } from 'date-fns';
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, updateDoc, increment, setDoc, addDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
@@ -371,6 +371,16 @@ export default function ClientesPage() {
         const adjustment = values.type === 'add' ? values.amount : -values.amount;
         await updateDoc(doc(firestore, 'clients', selectedClient.id!), {
             currentDebt: increment(adjustment)
+        });
+
+        // Registrar transação de dívida para histórico
+        await addDoc(collection(firestore, 'debt_transactions'), {
+          clientId: selectedClient.id,
+          clientName: selectedClient.name,
+          amount: values.amount,
+          type: values.type,
+          createdAt: new Date(),
+          route: selectedClient.route
         });
         
         triggerSuccess();

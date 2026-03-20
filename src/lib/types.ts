@@ -69,6 +69,15 @@ export type Despesa = BaseType & {
   route: string;
 };
 
+export type DebtTransaction = BaseType & {
+  clientId: string;
+  clientName: string;
+  amount: number;
+  type: 'add' | 'sub';
+  createdAt: Date;
+  route: string;
+};
+
 export type Route = BaseType & {
   name: string;
   description: string;

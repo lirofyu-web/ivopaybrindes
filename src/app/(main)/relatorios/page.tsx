@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Printer, Filter, Calendar as CalendarIcon, Package, Layers, Gift, Archive, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { BarChart, Printer, Filter, Calendar as CalendarIcon, Package, Layers, Gift, Archive, Loader2, Wallet, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,18 +12,29 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import type { Route, Cobranca, Prize } from '@/lib/types';
+import type { Route, Cobranca, Prize, Client, DebtTransaction } from '@/lib/types';
 import { useCollection } from '@/firebase';
+import { Separator } from '@/components/ui/separator';
+
+function formatCurrency(value: number) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function formatDate(date: Date) {
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+}
 
 export default function RelatoriosPage() {
     const { data: cobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
     const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
     const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
+    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
+    const { data: debtTransactions, isLoading: isLoadingDebts } = useCollection<DebtTransaction>('debt_transactions');
 
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
 
-    const isLoading = isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes;
+    const isLoading = isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes || isLoadingClients || isLoadingDebts;
 
     const routeOptions = useMemo(() => {
         if (!routes) return ['all'];
@@ -31,11 +43,8 @@ export default function RelatoriosPage() {
 
     const filteredCobrancas = useMemo(() => {
         if (!cobrancas) return [];
-        const sorted = [...cobrancas].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        
-        return sorted.filter(c => {
+        return cobrancas.filter(c => {
             const routeMatch = selectedRoute === 'all' || c.route === selectedRoute;
-            
             let dateMatch = true;
             if (date?.from) {
                 const fromDate = new Date(date.from);
@@ -47,10 +56,28 @@ export default function RelatoriosPage() {
                 toDate.setHours(23, 59, 59, 999);
                 dateMatch = dateMatch && c.createdAt <= toDate;
             }
-            
             return routeMatch && dateMatch;
         });
     }, [cobrancas, selectedRoute, date]);
+
+    const filteredDebtTransactions = useMemo(() => {
+        if (!debtTransactions) return [];
+        return debtTransactions.filter(t => {
+            const routeMatch = selectedRoute === 'all' || t.route === selectedRoute;
+            let dateMatch = true;
+            if (date?.from) {
+                const fromDate = new Date(date.from);
+                fromDate.setHours(0, 0, 0, 0);
+                dateMatch = t.createdAt >= fromDate;
+            }
+            if (date?.to) {
+                const toDate = new Date(date.to);
+                toDate.setHours(23, 59, 59, 999);
+                dateMatch = dateMatch && t.createdAt <= toDate;
+            }
+            return routeMatch && dateMatch;
+        });
+    }, [debtTransactions, selectedRoute, date]);
 
     const reportData = useMemo(() => {
         const data = {
@@ -59,8 +86,12 @@ export default function RelatoriosPage() {
             cartelasNovas: 0,
             cartelasMantidas: 0,
             prizesGiven: new Map<string, { prizeName: string, quantity: number }>(),
+            totalCurrentDebt: 0,
+            debtPaymentsReceived: 0,
+            indebtedClients: [] as Client[],
         };
 
+        // Dados de cobranças
         for (const cobranca of filteredCobrancas) {
             if (cobranca.kitStatus === 'novo') data.kitsNovos++;
             if (cobranca.kitStatus === 'manteve') data.kitsMantidos++;
@@ -77,13 +108,32 @@ export default function RelatoriosPage() {
                 }
             }
         }
+
+        // Dados de dívidas atuais (Clientes)
+        if (clients) {
+            clients.forEach(c => {
+                if (selectedRoute === 'all' || c.route === selectedRoute) {
+                    const debt = c.currentDebt || 0;
+                    data.totalCurrentDebt += debt;
+                    if (debt > 0) data.indebtedClients.push(c);
+                }
+            });
+        }
+
+        // Recebimentos de dívidas no período
+        filteredDebtTransactions.forEach(t => {
+            if (t.type === 'sub') {
+                data.debtPaymentsReceived += t.amount;
+            }
+        });
         
         return {
             ...data,
             prizesGiven: Array.from(data.prizesGiven.values()).sort((a, b) => b.quantity - a.quantity),
+            indebtedClients: data.indebtedClients.sort((a, b) => (b.currentDebt || 0) - (a.currentDebt || 0)),
         }
 
-    }, [filteredCobrancas]);
+    }, [filteredCobrancas, clients, filteredDebtTransactions, selectedRoute]);
 
     const handlePrint = () => {
         const reportContentNode = document.getElementById('report-content');
@@ -103,18 +153,7 @@ export default function RelatoriosPage() {
             printHeader.classList.remove('hidden');
         }
 
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Relatório Geral</title>
-                    ${pageStyles}
-                </head>
-                <body class="dark bg-background p-6">
-                    ${contentClone.innerHTML}
-                </body>
-            </html>
-        `);
-
+        printWindow.document.write(`<html><head><title>Relatório Geral</title>${pageStyles}</head><body class="dark bg-background p-6">${contentClone.innerHTML}</body></html>`);
         printWindow.document.close();
         setTimeout(() => {
             printWindow.focus();
@@ -130,174 +169,191 @@ export default function RelatoriosPage() {
         );
     }
 
-
     return (
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
             <div className="flex items-center gap-3">
                 <BarChart className="h-8 w-8 text-muted-foreground" />
-                <h1 className="text-3xl font-bold font-headline">Relatório Geral</h1>
+                <h1 className="text-3xl font-bold font-headline">Relatórios</h1>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <Select value={selectedRoute} onValueChange={setSelectedRoute}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filtrar por Rota" />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Rota" /></SelectTrigger>
                         <SelectContent>
-                            {routeOptions.map(route => (
-                                <SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>
-                            ))}
+                            {routeOptions.map(route => (<SelectItem key={route} value={route}>{route === 'all' ? 'Todas as Rotas' : route}</SelectItem>))}
                         </SelectContent>
                     </Select>
                 </div>
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                            "w-full sm:w-[260px] justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                        )}
-                        >
+                        <Button id="date" variant={"outline"} className={cn("w-full sm:w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date?.from ? (
-                            date.to ? (
-                            <>
-                                {format(date.from, "dd/MM/yyyy")} -{" "}
-                                {format(date.to, "dd/MM/yyyy")}
-                            </>
-                            ) : (
-                            format(date.from, "dd/MM/yyyy")
-                            )
-                        ) : (
-                            <span>Selecione um período</span>
-                        )}
+                        {date?.from ? (date.to ? <>{format(date.from, "dd/MM/yyyy")} - {format(date.to, "dd/MM/yyyy")}</> : format(date.from, "dd/MM/yyyy")) : <span>Período</span>}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={date?.from}
-                        selected={date}
-                        onSelect={setDate}
-                        numberOfMonths={2}
-                        />
+                        <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2}/>
                     </PopoverContent>
                 </Popover>
-                <Button onClick={handlePrint} className="w-full sm:w-auto">
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimir
-                </Button>
+                <Button onClick={handlePrint} className="w-full sm:w-auto"><Printer className="mr-2 h-4 w-4" />Imprimir</Button>
             </div>
         </div>
 
         <div id="report-content" className="space-y-6">
             <div className="hidden print:block mb-6 print-only-header">
-                <h2 className="text-2xl font-bold">Relatório Geral</h2>
+                <h2 className="text-2xl font-bold">Relatório Financeiro e de Estoque</h2>
                 <div className="text-sm text-muted-foreground">
                     <p><strong>Rota:</strong> {selectedRoute === 'all' ? 'Todas as Rotas' : selectedRoute}</p>
                     {date?.from && <p><strong>Período:</strong> {format(date.from, "dd/MM/yyyy")} {date.to ? `a ${format(date.to, "dd/MM/yyyy")}`: ''}</p>}
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Kits & Cartelas */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Status de Kits e Cartelas</CardTitle>
-                        <CardDescription>Contagem no período selecionado.</CardDescription>
+            {/* SEÇÃO DE DÍVIDAS E RECEBIMENTOS */}
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                            <Wallet className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-lg">Resumo de Dívidas</CardTitle>
+                        </div>
+                        <CardDescription>Valores pendentes e recebidos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-center">
-                            <Package className="h-6 w-6 text-primary mr-4"/>
-                            <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium leading-none">Kits de Prêmios</p>
-                                <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Novos: <span className="font-bold text-foreground">{reportData.kitsNovos}</span></span>
-                                    <span>Mantidos: <span className="font-bold text-foreground">{reportData.kitsMantidos}</span></span>
-                                </div>
-                            </div>
+                        <div className="flex justify-between items-center bg-background/50 p-3 rounded-lg border border-destructive/20">
+                            <span className="text-sm font-medium">Total em Dívidas Ativas:</span>
+                            <span className="text-lg font-bold text-destructive">{formatCurrency(reportData.totalCurrentDebt)}</span>
                         </div>
-                        <div className="flex items-center">
-                            <Layers className="h-6 w-6 text-accent mr-4"/>
-                            <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium leading-none">Cartelas de Raspinhas</p>
-                                <div className="flex justify-between text-sm text-muted-foreground">
-                                   <span>Novas: <span className="font-bold text-foreground">{reportData.cartelasNovas}</span></span>
-                                   <span>Mantidas: <span className="font-bold text-foreground">{reportData.cartelasMantidas}</span></span>
-                                </div>
-                            </div>
+                        <div className="flex justify-between items-center bg-background/50 p-3 rounded-lg border border-success/20">
+                            <span className="text-sm font-medium">Recebimentos no Período:</span>
+                            <span className="text-lg font-bold text-success">{formatCurrency(reportData.debtPaymentsReceived)}</span>
                         </div>
                     </CardContent>
                 </Card>
 
-                 {/* Current Prize Stock */}
+                <Card>
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                            <TrendingDown className="h-5 w-5 text-muted-foreground" />
+                            <CardTitle className="text-lg">Kits & Cartelas</CardTitle>
+                        </div>
+                        <CardDescription>Movimentação de material.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Kits Novos:</span>
+                            <span className="font-bold">{reportData.kitsNovos}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Kits Mantidos:</span>
+                            <span className="font-bold">{reportData.kitsMantidos}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Cartelas Novas:</span>
+                            <span className="font-bold">{reportData.cartelasNovas}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Cartelas Mantidas:</span>
+                            <span className="font-bold">{reportData.cartelasMantidas}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6">
+                 {/* Clientes com Dívida */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Estoque de Prêmios</CardTitle>
-                        <CardDescription>Visão geral do estoque atual.</CardDescription>
+                        <CardTitle className="text-base">Clientes Inadimplentes</CardTitle>
+                        <CardDescription>Quem deve atualmente na rota.</CardDescription>
                     </CardHeader>
+                    <CardContent>
+                        {reportData.indebtedClients.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Cliente</TableHead>
+                                        <TableHead className="text-right">Dívida</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {reportData.indebtedClients.map(c => (
+                                        <TableRow key={c.id}>
+                                            <TableCell className="py-2">{c.name}</TableCell>
+                                            <TableCell className="text-right py-2 font-bold text-destructive">{formatCurrency(c.currentDebt || 0)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                             <div className="text-center py-8 text-muted-foreground text-sm">Sem dívidas ativas.</div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Histórico de Recebimentos */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Recebimentos de Dívidas</CardTitle>
+                        <CardDescription>Pagamentos feitos no período.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {filteredDebtTransactions.filter(t => t.type === 'sub').length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Cliente</TableHead>
+                                        <TableHead>Data</TableHead>
+                                        <TableHead className="text-right">Valor</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDebtTransactions.filter(t => t.type === 'sub').map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell className="py-2">{t.clientName}</TableCell>
+                                            <TableCell className="py-2 text-xs">{formatDate(t.createdAt)}</TableCell>
+                                            <TableCell className="text-right py-2 font-bold text-success">{formatCurrency(t.amount)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground text-sm">Nenhum pagamento recebido.</div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                {/* Estoque de Prêmios */}
+                <Card>
+                    <CardHeader><CardTitle className="text-base">Estoque Atual</CardTitle></CardHeader>
                     <CardContent>
                         {prizes && prizes.length > 0 ? (
                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Prêmio</TableHead>
-                                        <TableHead className="text-right">Quantidade</TableHead>
-                                    </TableRow>
-                                </TableHeader>
+                                <TableHeader><TableRow><TableHead>Prêmio</TableHead><TableHead className="text-right">Qtd.</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {prizes.map(prize => (
-                                        <TableRow key={prize.id}>
-                                            <TableCell>{prize.name}</TableCell>
-                                            <TableCell className="text-right">{prize.quantity}</TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {prizes.map(p => (<TableRow key={p.id}><TableCell className="py-1">{p.name}</TableCell><TableCell className="text-right py-1">{p.quantity}</TableCell></TableRow>))}
                                 </TableBody>
                             </Table>
-                        ) : (
-                             <div className="text-center py-8 text-muted-foreground">
-                                <Archive className="mx-auto h-8 w-8" />
-                                <p className="mt-2 text-sm">Nenhum prêmio em estoque.</p>
-                            </div>
-                        )}
+                        ) : <div className="text-center py-8 text-muted-foreground text-sm">Vazio.</div>}
                     </CardContent>
                 </Card>
 
-                {/* Prizes Given */}
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Prêmios Entregues</CardTitle>
-                        <CardDescription>Total de prêmios que saíram no período selecionado.</CardDescription>
-                    </CardHeader>
+                {/* Prêmios Entregues */}
+                <Card>
+                    <CardHeader><CardTitle className="text-base">Prêmios Saídos</CardTitle></CardHeader>
                     <CardContent>
                         {reportData.prizesGiven.length > 0 ? (
                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Prêmio</TableHead>
-                                        <TableHead className="text-right">Quantidade Entregue</TableHead>
-                                    </TableRow>
-                                </TableHeader>
+                                <TableHeader><TableRow><TableHead>Prêmio</TableHead><TableHead className="text-right">Saídas</TableHead></TableRow></TableHeader>
                                 <TableBody>
-                                    {reportData.prizesGiven.map(prize => (
-                                        <TableRow key={prize.prizeName}>
-                                            <TableCell>{prize.prizeName}</TableCell>
-                                            <TableCell className="text-right">{prize.quantity}</TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {reportData.prizesGiven.map(p => (<TableRow key={p.prizeName}><TableCell className="py-1">{p.prizeName}</TableCell><TableCell className="text-right py-1 font-bold">{p.quantity}</TableCell></TableRow>))}
                                 </TableBody>
                             </Table>
-                        ) : (
-                            <div className="text-center py-10 text-muted-foreground">
-                                <Gift className="mx-auto h-8 w-8" />
-                                <p className="mt-2 text-sm">Nenhum prêmio saiu no período selecionado.</p>
-                            </div>
-                        )}
+                        ) : <div className="text-center py-8 text-muted-foreground text-sm">Nenhum prêmio saiu.</div>}
                     </CardContent>
                 </Card>
             </div>

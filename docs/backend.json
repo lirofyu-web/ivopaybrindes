@@ -95,6 +95,20 @@
       },
       "required": ["description", "value", "createdAt", "route"]
     },
+    "DebtTransaction": {
+      "title": "DebtTransaction",
+      "description": "Represents a debt adjustment transaction.",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["add", "sub"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "route": { "type": "string" }
+      },
+      "required": ["clientId", "clientName", "amount", "type", "createdAt", "route"]
+    },
     "Route": {
       "title": "Route",
       "description": "Represents a client route.",
@@ -125,6 +139,10 @@
     "/despesas/{despesaId}": {
       "schema": { "$ref": "#/entities/Despesa" },
       "description": "Stores expense records."
+    },
+    "/debt_transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/DebtTransaction" },
+      "description": "Stores debt adjustment history."
     },
     "/rotas/{rotaId}": {
       "schema": { "$ref": "#/entities/Route" },
