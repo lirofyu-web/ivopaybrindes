@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,6 +34,7 @@ const formSchema = z.object({
   route: z.string().min(1, 'Selecione uma rota.'),
   raspinha: z.coerce.number().min(0, 'Valor positivo.'),
   comissao: z.coerce.number().min(0).max(100),
+  currentDebt: z.coerce.number().min(0).optional().default(0),
   location: z.object({ lat: z.number(), lng: z.number() }).optional(),
   prizes: z.array(z.object({
     prizeId: z.string(),
@@ -62,9 +64,10 @@ export function AddClientForm({ client }: { client?: Client }) {
       ...client,
       route: client.route || '',
       city: client.city || '',
+      currentDebt: client.currentDebt || 0,
       prizes: client.prizes || [] 
     } : {
-      name: '', phone: '', address: '', city: '', route: '', raspinha: 2.0, comissao: 25, prizes: [],
+      name: '', phone: '', address: '', city: '', route: '', raspinha: 2.0, comissao: 25, currentDebt: 0, prizes: [],
     },
   });
 
@@ -186,6 +189,10 @@ export function AddClientForm({ client }: { client?: Client }) {
                 <FormItem><FormLabel>Comissão (%)</FormLabel><FormControl><Input type="number" className="h-11 text-base" {...field} /></FormControl></FormItem>
             )}/>
         </div>
+
+        <FormField control={form.control} name="currentDebt" render={({ field }) => (
+            <FormItem><FormLabel>Dívida Inicial (R$)</FormLabel><FormControl><Input type="number" step="0.01" className="h-11 text-base" {...field} /></FormControl></FormItem>
+        )}/>
 
         <Button type="button" variant="outline" className="w-full h-11 border-primary/30" onClick={handleLocation} disabled={isLocating}>
             {isLocating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}

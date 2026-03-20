@@ -1,7 +1,7 @@
 
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon } from 'lucide-react';
+import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon, Wallet } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
@@ -54,7 +54,12 @@ const chargeFormSchema = z.object({
   backCardImageUrl: z.string().optional(),
 });
 
-function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
+const debtFormSchema = z.object({
+  amount: z.coerce.number().min(0.01, 'O valor deve ser maior que zero.'),
+  type: z.enum(['add', 'sub']),
+});
+
+function ClientCard({ client, onChargeClick, onDebtClick, onDeleteClick, visitStatus }: { client: Client; onChargeClick: (client: Client) => void; onDebtClick: (client: Client) => void; onDeleteClick: (client: Client) => void; visitStatus: 'visited' | 'not-visited' }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.address}, ${client.city}`)}`;
 
   return (
@@ -89,9 +94,14 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
                 <DollarSign className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <span>Raspinha: {formatCurrency(client.raspinha)}</span>
             </div>
-            <div className="flex items-center gap-2">
-                <Percent className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                <span>Comissão: {client.comissao}%</span>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Percent className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    <span>Comissão: {client.comissao}%</span>
+                </div>
+                {client.currentDebt !== undefined && client.currentDebt > 0 && (
+                    <Badge variant="destructive" className="text-[10px] h-5">Dívida: {formatCurrency(client.currentDebt)}</Badge>
+                )}
             </div>
         </div>
 
@@ -99,6 +109,10 @@ function ClientCard({ client, onChargeClick, onDeleteClick, visitStatus }: { cli
             <Button size="sm" className="flex-1 text-xs h-10" onClick={() => onChargeClick(client)}>
                 <DollarSign className="mr-1 h-3.5 w-3.5" />
                 Cobrança
+            </Button>
+            <Button size="sm" variant="secondary" className="flex-1 text-xs h-10" onClick={() => onDebtClick(client)}>
+                <Wallet className="mr-1 h-3.5 w-3.5 text-primary" />
+                Dívida
             </Button>
             <Link href={`/clientes/editar/${client.id}`} className="flex-shrink-0">
               <Button size="icon" variant="outline" className="h-10 w-10 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
@@ -124,7 +138,9 @@ export default function ClientesPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
+  const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
   const [isSubmittingCharge, setIsSubmittingCharge] = useState(false);
+  const [isSubmittingDebt, setIsSubmittingDebt] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -146,6 +162,11 @@ export default function ClientesPage() {
   const form = useForm<z.infer<typeof chargeFormSchema>>({
     resolver: zodResolver(chargeFormSchema),
     defaultValues: { scratchedAmount: 0, discount: 0, prizesGiven: [] },
+  });
+
+  const debtForm = useForm<z.infer<typeof debtFormSchema>>({
+    resolver: zodResolver(debtFormSchema),
+    defaultValues: { amount: 0, type: 'add' },
   });
   
   const scratchedAmount = form.watch('scratchedAmount');
@@ -202,6 +223,12 @@ export default function ClientesPage() {
     setFrontImage(null);
     setBackImage(null);
     setIsCameraOpen(false);
+  };
+
+  const handleOpenDebtDialog = (client: Client) => {
+    setSelectedClient(client);
+    setIsDebtDialogOpen(true);
+    debtForm.reset({ amount: 0, type: 'add' });
   };
 
   const handleChargeDialogClose = (open: boolean) => {
@@ -336,6 +363,27 @@ export default function ClientesPage() {
     }
   };
 
+  const onDebtSubmit = async (values: z.infer<typeof debtFormSchema>) => {
+    if (!selectedClient || !firestore) return;
+    setIsSubmittingDebt(true);
+    
+    try {
+        const adjustment = values.type === 'add' ? values.amount : -values.amount;
+        await updateDoc(doc(firestore, 'clients', selectedClient.id!), {
+            currentDebt: increment(adjustment)
+        });
+        
+        triggerSuccess();
+        toast({ title: 'Dívida Atualizada!', description: `Saldo ajustado para ${selectedClient.name}.` });
+        setIsDebtDialogOpen(false);
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Erro!', description: 'Falha ao ajustar dívida.' });
+    } finally {
+        setIsSubmittingDebt(false);
+    }
+  };
+
   const handlePrintReceipt = (cobranca: Cobranca) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -408,6 +456,7 @@ export default function ClientesPage() {
                                 key={client.id} 
                                 client={client} 
                                 onChargeClick={handleOpenChargeDialog}
+                                onDebtClick={handleOpenDebtDialog}
                                 onDeleteClick={handleDeleteRequest}
                                 visitStatus={clientVisitStatus.get(client.id!) || 'not-visited'}
                              />
@@ -417,6 +466,7 @@ export default function ClientesPage() {
             ))}
         </div>
 
+        {/* DIÁLOGO DE COBRANÇA */}
         <Dialog open={isChargeDialogOpen} onOpenChange={handleChargeDialogClose}>
             <DialogContent className="w-[95vw] sm:max-w-lg max-h-[95vh] overflow-y-auto p-4 rounded-lg">
                 <DialogHeader className="mb-2">
@@ -515,6 +565,50 @@ export default function ClientesPage() {
                         <Button type="submit" disabled={isSubmittingCharge || !scratchedAmount} className="w-full h-12 text-base">
                             {isSubmittingCharge ? <Loader2 className="animate-spin" /> : 'Finalizar Cobrança'}
                         </Button>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+
+        {/* DIÁLOGO DE DÍVIDA */}
+        <Dialog open={isDebtDialogOpen} onOpenChange={setIsDebtDialogOpen}>
+            <DialogContent className="w-[90vw] sm:max-w-sm rounded-lg">
+                <DialogHeader>
+                    <DialogTitle className="text-base">Adicionar Dívida: {selectedClient?.name}</DialogTitle>
+                    <DialogDescription className="text-xs">Ajuste o saldo pendente do cliente.</DialogDescription>
+                </DialogHeader>
+                <Form {...debtForm}>
+                    <form onSubmit={debtForm.handleSubmit(onDebtSubmit)} className="space-y-4 pt-2">
+                        <FormField control={debtForm.control} name="type" render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="add" id="d-add" />
+                                        <label htmlFor="d-add" className="text-sm">Aumentar Dívida</label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="sub" id="d-sub" />
+                                        <label htmlFor="d-sub" className="text-sm">Abater Dívida</label>
+                                    </div>
+                                </RadioGroup>
+                            </FormItem>
+                        )}/>
+                        
+                        <FormField control={debtForm.control} name="amount" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs">Valor do Ajuste (R$)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" className="h-11 text-base" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+
+                        <div className="pt-2">
+                             <Button type="submit" disabled={isSubmittingDebt} className="w-full h-11">
+                                {isSubmittingDebt ? <Loader2 className="animate-spin" /> : 'Confirmar Ajuste'}
+                            </Button>
+                        </div>
                     </form>
                 </Form>
             </DialogContent>

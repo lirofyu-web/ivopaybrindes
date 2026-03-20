@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Client": {
@@ -22,6 +23,7 @@
         "updatedAt": { "type": "string", "format": "date-time" },
         "raspinha": { "type": "number" },
         "comissao": { "type": "number" },
+        "currentDebt": { "type": "number", "default": 0 },
         "prizes": {
           "type": "array",
           "items": {

@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 // Helper type to convert Timestamp fields to Date.
@@ -24,6 +25,7 @@ export type Client = BaseType & {
   updatedAt?: Date;
   raspinha: number;
   comissao: number;
+  currentDebt?: number;
   prizes?: {
       prizeId: string;
       prizeName: string;
