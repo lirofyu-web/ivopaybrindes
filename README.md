@@ -1,8 +1,8 @@
 # MRD Brindes - Sistema Profissional PWA
 
-Sistema mobile-first para gerenciamento de clientes, rotas, prêmios, cobranças de raspinhas e controle total de dívidas.
+Sistema mobile-first para gerenciamento de clientes, rotas, prêmios, cobranças de raspinhas e controle total de dívidas acumuladas.
 
-## Como subir este projeto para o seu GitHub
+## 🚀 Como subir para o seu GitHub
 
 Siga estes passos exatos no terminal da pasta do seu projeto:
 
@@ -13,18 +13,18 @@ Siga estes passos exatos no terminal da pasta do seu projeto:
 ```bash
 git init
 git add .
-git commit -m "Versão Final - Gestão de Dívidas e PWA Offline"
+git commit -m "Versão Final - Gestão de Dívidas, PWA Offline e Câmera Forçada"
 git branch -M main
 git remote add origin https://github.com/lirofyu-web/studio.git
 git push -u origin main
 ```
 
-## Funcionalidades Principais
+## ✨ Funcionalidades Principais
 
-- **Modo Offline**: Funciona totalmente sem internet. Os dados são sincronizados automaticamente assim que a conexão volta.
+- **Modo Offline**: Funciona totalmente sem internet. Os dados são sincronizados automaticamente via Firestore Persistence.
 - **Gestão de Dívidas**: Controle de saldos pendentes por cliente e histórico de recebimentos nos relatórios.
-- **Câmera Traseira Forçada**: Captura fotos de cartelas (frente/verso) com nitidez máxima no celular.
-- **Relatórios Financeiros**: Visualização de lucros, comissões, despesas e fluxo de dívidas.
+- **Câmera Traseira Forçada**: Captura fotos de cartelas (frente/verso) com nitidez máxima em dispositivos móveis.
+- **Relatórios Financeiros**: Visualização de lucros, comissões, despesas e fluxo de recebimento de dívidas.
 - **Instalável (PWA)**: Pode ser instalado como um app nativo no Android (Chrome) e iOS (Safari).
 
 ---
