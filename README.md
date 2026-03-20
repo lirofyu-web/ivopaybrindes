@@ -1,14 +1,14 @@
 # MRD Brindes - Sistema Profissional PWA
 
-Sistema mobile-first para gerenciamento de clientes, rotas, prêmios, cobranças de raspinhas e controle de dívidas.
+Sistema mobile-first para gerenciamento de clientes, rotas, prêmios, cobranças de raspinhas e controle total de dívidas.
 
-## Como conectar ao GitHub e subir o projeto
+## Como subir este projeto para o seu GitHub
 
-Para subir este código para o seu repositório oficial, siga estes passos exatos no seu terminal local:
+Siga estes passos exatos no terminal da pasta do seu projeto:
 
-1. **Baixe o projeto** clicando no ícone de download (seta para baixo) na barra lateral esquerda do Studio.
-2. **Abra o terminal** na pasta onde você extraiu o projeto.
-3. **Execute a sequência de comandos abaixo**:
+1. **Baixe o projeto** clicando no ícone de download (seta para baixo) na barra lateral do Studio.
+2. **Abra o terminal** na pasta onde você extraiu os arquivos.
+3. **Execute os comandos abaixo**:
 
 ```bash
 git init
@@ -19,14 +19,13 @@ git remote add origin https://github.com/lirofyu-web/studio.git
 git push -u origin main
 ```
 
-## Destaques do Aplicativo
+## Funcionalidades Principais
 
-- **Gestão de Dívidas**: Controle total de saldos pendentes por cliente, com histórico de recebimentos e abatimentos.
-- **Relatórios Financeiros**: Seção dedicada para visualizar total de dívidas ativas e valores recebidos no período.
-- **Offline Sync**: Funciona totalmente sem internet. Os dados são sincronizados automaticamente quando a conexão volta.
-- **Instalável (PWA)**: Pode ser instalado como um aplicativo nativo no Android (Chrome) e iOS (Safari).
-- **Câmera Traseira Forçada**: Captura fotos de cartelas (frente e verso) com nitidez máxima.
-- **Segurança**: Integração nativa com Firebase Authentication e Firestore.
+- **Modo Offline**: Funciona totalmente sem internet. Os dados são sincronizados automaticamente assim que a conexão volta.
+- **Gestão de Dívidas**: Controle de saldos pendentes por cliente e histórico de recebimentos nos relatórios.
+- **Câmera Traseira Forçada**: Captura fotos de cartelas (frente/verso) com nitidez máxima no celular.
+- **Relatórios Financeiros**: Visualização de lucros, comissões, despesas e fluxo de dívidas.
+- **Instalável (PWA)**: Pode ser instalado como um app nativo no Android (Chrome) e iOS (Safari).
 
 ---
 © 2024 MRD Brindes - Tecnologia para o campo.
