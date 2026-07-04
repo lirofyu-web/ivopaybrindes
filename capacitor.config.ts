@@ -2,10 +2,10 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.nextn.app',
-  appName: 'Nextn Studio',
+  appName: 'ivopaybrindes',
   webDir: 'public',
   server: {
-    url: 'https://mrdbrindessedererro.vercel.app',
+    url: 'https://ivopaybrindes.vercel.app',
     cleartext: true
   }
 };

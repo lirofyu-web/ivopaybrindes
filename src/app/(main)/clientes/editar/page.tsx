@@ -4,11 +4,14 @@ import { AddClientForm } from "@/components/forms/add-client-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDoc } from "@/firebase";
 import type { Client } from "@/lib/types";
-import { notFound } from "next/navigation";
+import { notFound, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 
-export default function EditarClientePage({ searchParams }: { searchParams: { id: string } }) {
-    const { data: client, isLoading } = useDoc<Client>(`clients/${searchParams.id}`);
+function EditClientForm() {
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
+    const { data: client, isLoading } = useDoc<Client>(`clients/${id}`);
 
     if (isLoading) {
       return (
@@ -35,5 +38,13 @@ export default function EditarClientePage({ searchParams }: { searchParams: { id
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function EditarClientePage() {
+    return (
+        <Suspense fallback={<div>Carregando...</div>}>
+            <EditClientForm />
+        </Suspense>
     );
 }
