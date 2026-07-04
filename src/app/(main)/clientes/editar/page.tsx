@@ -11,7 +11,11 @@ import { Suspense } from "react";
 function EditClientForm() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
-    const { data: client, isLoading } = useDoc<Client>(`clients/${id}`);
+    const { data: client, isLoading, error } = useDoc<Client>(id ? `clients/${id}` : '');
+
+    if (!id) {
+        return <div className="p-10 text-center">ID do cliente não encontrado na URL.</div>;
+    }
 
     if (isLoading) {
       return (
@@ -22,8 +26,12 @@ function EditClientForm() {
       );
     }
 
+    if (error) {
+        return <div className="p-10 text-center text-red-500">Erro ao carregar o cliente: {error.message}</div>;
+    }
+
     if (!client) {
-        notFound();
+        return <div className="p-10 text-center text-muted-foreground">Cliente não encontrado no banco de dados.</div>;
     }
 
     return (
