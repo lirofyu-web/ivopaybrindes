@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Fluxo de IA para o Assistente de Negócios da MRD Brindes.
+ * @fileOverview Fluxo de IA para o Assistente de Negócios da IVOPAY BRINDES.
  *
  * - assistantFlow - Lida com as perguntas do usuário sobre o negócio.
  */
@@ -25,7 +25,7 @@ const prompt = ai.definePrompt({
   name: 'assistantPrompt',
   input: { schema: AssistantInputSchema },
   output: { schema: AssistantOutputSchema },
-  prompt: `Você é o Assistente Inteligente da MRD Brindes, um sistema de gerenciamento de raspinhas e prêmios.
+  prompt: `Você é o Assistente Inteligente da IVOPAY BRINDES, um sistema de gerenciamento de raspinhas e prêmios.
 Sua função é ajudar o vendedor/gestor a entender melhor seus dados, rotas e clientes.
 
 Use o contexto fornecido abaixo para responder de forma precisa e profissional.

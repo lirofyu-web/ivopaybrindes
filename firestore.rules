@@ -9,28 +9,27 @@ service cloud.firestore {
     }
 
     // Rules for collections
-    match /clients/{clientId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /premios/{premioId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /cobrancas/{cobrancaId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /despesas/{despesaId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /debt_transactions/{transactionId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /rotas/{rotaId} {
-      allow read, write: if isSignedIn();
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      
+      match /clients/{clientId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+      match /premios/{premioId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+      match /cobrancas/{cobrancaId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+      match /despesas/{despesaId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+      match /debt_transactions/{transactionId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+      match /rotas/{rotaId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
   }
 }

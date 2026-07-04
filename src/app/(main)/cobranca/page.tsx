@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { deleteDoc, doc } from "firebase/firestore";
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,6 +33,7 @@ function formatDate(date: Date) {
 
 export default function CobrancaPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
     const { triggerSuccess } = useSuccessAnimation();
     const { data: cobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
     const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
@@ -165,9 +166,9 @@ export default function CobrancaPage() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!cobrancaToDelete || !firestore) return;
+        if (!cobrancaToDelete || !firestore || !user) return;
         try {
-            await deleteDoc(doc(firestore, 'cobrancas', cobrancaToDelete.id!));
+            await deleteDoc(doc(firestore, 'users', user.uid, 'cobrancas', cobrancaToDelete.id!));
             triggerSuccess();
             toast({ title: 'Cobrança Excluída!', description: `A cobrança para "${cobrancaToDelete.clientName}" foi removida.`, variant: 'destructive' });
         } catch (error) {

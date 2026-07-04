@@ -1,6 +1,6 @@
 {
-  "name": "MRD Brindes",
-  "short_name": "MRD",
+  "name": "IVOPAY BRINDES",
+  "short_name": "IVOPAY",
   "description": "Sistema Profissional de Gestão de Raspinhas e Prêmios",
   "start_url": "/",
   "display": "standalone",
@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/mrd-logo/192/192",
+      "src": "https://picsum.photos/seed/ivopay-logo/192/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/mrd-logo/512/512",
+      "src": "https://picsum.photos/seed/ivopay-logo/512/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

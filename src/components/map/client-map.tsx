@@ -75,7 +75,7 @@ const ClientMap = ({ clients, selectedClient, visitStatus }: ClientMapProps) => 
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {clientsWithLocation.map(client => (
-                <Marker key={client.id} position={[client.location!.lat, client.location!.lng]} icon={getIcon(client.id)}>
+                <Marker key={client.id} position={[client.location!.lat, client.location!.lng]} icon={getIcon(client.id!)}>
                     <Popup>
                        <strong>{client.name}</strong><br />
                        {client.address}, {client.city}<br />

@@ -1,5 +1,9 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
+    "site": "studio-6418989475-b2135",
     "source": ".",
     "ignore": [
       "firebase.json",

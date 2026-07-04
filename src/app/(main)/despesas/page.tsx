@@ -21,7 +21,7 @@ import { TrendingDown, PlusCircle, Loader2, Filter, Printer, Calendar as Calenda
 import type { Despesa, Route } from '@/lib/types';
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
 
@@ -42,6 +42,7 @@ function formatDate(date: Date) {
 
 export default function DespesasPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
     const { triggerSuccess } = useSuccessAnimation();
     const { data: despesas, isLoading: isLoadingDespesas } = useCollection<Despesa>('despesas');
     const { data: routes, isLoading: isLoadingRoutes } = useCollection<Route>('rotas');
@@ -136,7 +137,7 @@ export default function DespesasPage() {
     };
 
     const onSubmit = async (values: z.infer<typeof despesaFormSchema>) => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         setIsSubmitting(true);
 
         const newDespesa: Omit<Despesa, 'id'> = {
@@ -145,7 +146,7 @@ export default function DespesasPage() {
         };
 
         try {
-            await addDoc(collection(firestore, 'despesas'), newDespesa);
+            await addDoc(collection(firestore, 'users', user.uid, 'despesas'), newDespesa);
             triggerSuccess();
             toast({
                 title: 'Despesa Adicionada!',
@@ -171,10 +172,10 @@ export default function DespesasPage() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!despesaToDelete || !firestore) return;
+        if (!despesaToDelete || !firestore || !user) return;
         
         try {
-            await deleteDoc(doc(firestore, 'despesas', despesaToDelete.id!));
+            await deleteDoc(doc(firestore, 'users', user.uid, 'despesas', despesaToDelete.id!));
             triggerSuccess();
             toast({
                 title: 'Despesa Excluída!',

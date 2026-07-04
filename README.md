@@ -1,4 +1,4 @@
-# MRD Brindes - Sistema Profissional PWA
+# IVOPAY BRINDES - Sistema Profissional PWA
 
 Sistema mobile-first para gerenciamento de clientes, rotas, prêmios, cobranças de raspinhas e controle total de dívidas acumuladas.
 
@@ -28,4 +28,4 @@ git push -u origin main
 - **Instalável (PWA)**: Pode ser instalado como um app nativo no Android (Chrome) e iOS (Safari).
 
 ---
-© 2024 MRD Brindes - Tecnologia para o campo.
+© 2024 IVOPAY BRINDES - Tecnologia para o campo.

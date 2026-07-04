@@ -19,7 +19,7 @@ export default function ConfiguracoesPage() {
     const ThemeSelector = () => {
         if (!mounted) {
             return (
-                 <div className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-3">
+                 <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
                     <Skeleton className="h-[108px] w-full" />
                     <Skeleton className="h-[108px] w-full" />
                     <Skeleton className="h-[108px] w-full" />
@@ -31,7 +31,7 @@ export default function ConfiguracoesPage() {
             <RadioGroup
                 value={theme}
                 onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
-                className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-3"
+                className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3"
             >
                 <div>
                     <RadioGroupItem value="light" id="light" className="peer sr-only" />

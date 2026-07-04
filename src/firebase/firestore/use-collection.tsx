@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
-import type { WithTimestamps } from '@/lib/types';
+import { useUser } from '../auth/use-user';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'updatedAt'> {
+function processDoc<T>(doc: DocumentData): T {
     const data = doc.data() as any;
     const processedData: any = { ...data, id: doc.id };
 
@@ -22,17 +22,22 @@ function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'upda
 
 export function useCollection<T>(path: string) {
     const firestore = useFirestore();
-    const [data, setData] = useState<WithTimestamps<T, 'createdAt' | 'updatedAt'>[] | null>(null);
+    const { user } = useUser();
+    const [data, setData] = useState<T[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        if (!firestore) {
-            setIsLoading(false);
+        if (!firestore || !user) {
+            if (!user) {
+                setData(null);
+                setIsLoading(false);
+            }
             return;
         };
 
-        const collectionRef = collection(firestore, path);
+        const scopedPath = path.startsWith('users/') ? path : `users/${user.uid}/${path}`;
+        const collectionRef = collection(firestore, scopedPath);
         // includeMetadataChanges garante que o cache local dispare o snapshot imediatamente
         const unsubscribe = onSnapshot(collectionRef, 
             { includeMetadataChanges: true },
@@ -53,7 +58,7 @@ export function useCollection<T>(path: string) {
         );
 
         return () => unsubscribe();
-    }, [path, firestore]);
+    }, [path, firestore, user]);
 
     return { data, isLoading, error };
 }

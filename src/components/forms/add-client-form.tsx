@@ -21,7 +21,7 @@ import type { Prize, Client, Route } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,7 @@ const formSchema = z.object({
 export function AddClientForm({ client }: { client?: Client }) {
   const router = useRouter();
   const firestore = useFirestore();
+  const { user } = useUser();
   const { triggerSuccess } = useSuccessAnimation();
   const { data: routes } = useCollection<Route>('rotas');
   const { data: prizes } = useCollection<Prize>('premios');
@@ -77,7 +78,7 @@ export function AddClientForm({ client }: { client?: Client }) {
   }, [client]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) return;
+    if (!firestore || !user) return;
     setIsSubmitting(true);
 
     const clientData: any = {
@@ -94,12 +95,12 @@ export function AddClientForm({ client }: { client?: Client }) {
     
     try {
       if (client?.id) {
-          await updateDoc(doc(firestore, 'clients', client.id), clientData);
+          await updateDoc(doc(firestore, 'users', user.uid, 'clients', client.id), clientData);
           triggerSuccess();
           toast({ title: 'Sucesso!', description: 'Cliente atualizado.' });
           router.push('/clientes');
       } else {
-          await addDoc(collection(firestore, 'clients'), { ...clientData, status: 'active' });
+          await addDoc(collection(firestore, 'users', user.uid, 'clients'), { ...clientData, status: 'active' });
           triggerSuccess();
           toast({ title: 'Sucesso!', description: 'Cliente cadastrado.' });
           router.push('/clientes');
@@ -111,6 +112,7 @@ export function AddClientForm({ client }: { client?: Client }) {
       setIsSubmitting(false);
     }
   }
+
   
   const handleLocation = () => {
     if (!navigator.geolocation) return;

@@ -1,4 +1,4 @@
-# **App Name**: MRD Gestão
+# **App Name**: IVOPAY Gestão
 
 ## Core Features:
 

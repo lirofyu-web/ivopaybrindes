@@ -41,7 +41,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <SidebarInset className="min-h-svh flex flex-col">
           <Header />
           <div className="flex-1 p-3 sm:p-6 overflow-x-hidden">
-            <div className="max-w-7xl mx-auto w-full">
+            <div className="w-full max-w-screen-2xl mx-auto">
               {children}
             </div>
           </div>

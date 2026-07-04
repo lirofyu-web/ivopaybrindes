@@ -19,7 +19,7 @@ const TripReport = ({ clients, routeName }: { clients: Client[], routeName?: str
     <div className="border-b-2 border-black pb-4 mb-6 flex justify-between items-end">
       <div>
         <h1 className="text-2xl font-bold uppercase">Relatório de Viagem</h1>
-        <p className="text-sm">MRD Brindes - Guia de Visitação</p>
+        <p className="text-sm">IVOPAY BRINDES - Guia de Visitação</p>
       </div>
       <div className="text-right">
         <p className="text-sm font-bold">Data: {format(new Date(), 'dd/MM/yyyy')}</p>
@@ -51,7 +51,7 @@ const TripReport = ({ clients, routeName }: { clients: Client[], routeName?: str
     </table>
 
     <div className="mt-8 pt-4 border-t border-dashed border-gray-400">
-      <p className="text-[10px] text-gray-500 text-center italic">Gerado via MRD Brindes App - Documento para uso em campo.</p>
+      <p className="text-[10px] text-gray-500 text-center italic">Gerado via IVOPAY BRINDES App - Documento para uso em campo.</p>
     </div>
   </div>
 );
@@ -128,7 +128,7 @@ export default function MapaPage() {
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Relatório de Viagem - MRD Brindes</title>
+                    <title>Relatório de Viagem - IVOPAY BRINDES</title>
                     <script src="https://cdn.tailwindcss.com"></script>
                     <style>
                         @media print {

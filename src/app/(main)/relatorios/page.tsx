@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import type { Route, Cobranca, Prize, Client, DebtTransaction } from '@/lib/types';
+import type { Route, Cobranca, Prize, Client, DebtTransaction, Despesa } from '@/lib/types';
 import { useCollection } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -30,11 +30,12 @@ export default function RelatoriosPage() {
     const { data: prizes, isLoading: isLoadingPrizes } = useCollection<Prize>('premios');
     const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
     const { data: debtTransactions, isLoading: isLoadingDebts } = useCollection<DebtTransaction>('debt_transactions');
+    const { data: despesas, isLoading: isLoadingDespesas } = useCollection<Despesa>('despesas');
 
     const [selectedRoute, setSelectedRoute] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>();
 
-    const isLoading = isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes || isLoadingClients || isLoadingDebts;
+    const isLoading = isLoadingCobrancas || isLoadingRoutes || isLoadingPrizes || isLoadingClients || isLoadingDebts || isLoadingDespesas;
 
     const routeOptions = useMemo(() => {
         if (!routes) return ['all'];
@@ -79,6 +80,25 @@ export default function RelatoriosPage() {
         });
     }, [debtTransactions, selectedRoute, date]);
 
+    const filteredDespesas = useMemo(() => {
+        if (!despesas) return [];
+        return despesas.filter(d => {
+            const routeMatch = selectedRoute === 'all' || d.route === selectedRoute;
+            let dateMatch = true;
+            if (date?.from) {
+                const fromDate = new Date(date.from);
+                fromDate.setHours(0, 0, 0, 0);
+                dateMatch = d.createdAt >= fromDate;
+            }
+            if (date?.to) {
+                const toDate = new Date(date.to);
+                toDate.setHours(23, 59, 59, 999);
+                dateMatch = dateMatch && d.createdAt <= toDate;
+            }
+            return routeMatch && dateMatch;
+        });
+    }, [despesas, selectedRoute, date]);
+
     const reportData = useMemo(() => {
         const data = {
             kitsNovos: 0,
@@ -89,10 +109,13 @@ export default function RelatoriosPage() {
             totalCurrentDebt: 0,
             debtPaymentsReceived: 0,
             indebtedClients: [] as Client[],
+            totalNetRevenue: 0,
+            totalDespesas: 0,
         };
 
         // Dados de cobranças
         for (const cobranca of filteredCobrancas) {
+            data.totalNetRevenue += cobranca.netRevenue;
             if (cobranca.kitStatus === 'novo') data.kitsNovos++;
             if (cobranca.kitStatus === 'manteve') data.kitsMantidos++;
             if (cobranca.cartelaStatus === 'nova') data.cartelasNovas++;
@@ -127,13 +150,21 @@ export default function RelatoriosPage() {
             }
         });
         
+        // Despesas
+        for (const despesa of filteredDespesas) {
+            data.totalDespesas += despesa.value;
+        }
+
+        const saldoFinal = data.totalNetRevenue + data.debtPaymentsReceived - data.totalDespesas;
+
         return {
             ...data,
+            saldoFinal,
             prizesGiven: Array.from(data.prizesGiven.values()).sort((a, b) => b.quantity - a.quantity),
             indebtedClients: data.indebtedClients.sort((a, b) => (b.currentDebt || 0) - (a.currentDebt || 0)),
         }
 
-    }, [filteredCobrancas, clients, filteredDebtTransactions, selectedRoute]);
+    }, [filteredCobrancas, clients, filteredDebtTransactions, filteredDespesas, selectedRoute]);
 
     const handlePrint = () => {
         const reportContentNode = document.getElementById('report-content');
@@ -210,7 +241,35 @@ export default function RelatoriosPage() {
                 </div>
             </div>
 
-            {/* SEÇÃO DE DÍVIDAS E RECEBIMENTOS */}
+            {/* SEÇÃO DRE: LUCRO E PREJUÍZO */}
+            <div className="grid grid-cols-1 gap-6">
+                <Card className={cn("border-2", reportData.saldoFinal >= 0 ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5")}>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xl">Resultado do Período (Lucro / Prejuízo)</CardTitle>
+                        <CardDescription>Balanço geral das entradas e saídas financeiras.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid sm:grid-cols-3 gap-4">
+                            <div className="space-y-1 bg-background/60 p-3 rounded-lg border">
+                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5"><Wallet className="h-4 w-4 text-success"/> Entradas Totais</p>
+                                <p className="text-xl font-bold text-success">{formatCurrency(reportData.totalNetRevenue + reportData.debtPaymentsReceived)}</p>
+                                <p className="text-[10px] text-muted-foreground">Cobranças: {formatCurrency(reportData.totalNetRevenue)} | Dívidas Rec.: {formatCurrency(reportData.debtPaymentsReceived)}</p>
+                            </div>
+                            <div className="space-y-1 bg-background/60 p-3 rounded-lg border">
+                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5"><TrendingDown className="h-4 w-4 text-destructive"/> Saídas (Despesas)</p>
+                                <p className="text-xl font-bold text-destructive">-{formatCurrency(reportData.totalDespesas)}</p>
+                            </div>
+                            <div className="space-y-1 bg-background/80 p-3 rounded-lg border-2 border-primary/20 relative overflow-hidden">
+                                <div className={cn("absolute inset-0 opacity-10", reportData.saldoFinal >= 0 ? "bg-success" : "bg-destructive")}></div>
+                                <p className="text-sm font-medium text-muted-foreground relative z-10">Saldo Final</p>
+                                <p className={cn("text-2xl font-black relative z-10", reportData.saldoFinal >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(reportData.saldoFinal)}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* SEÇÃO DE DÍVIDAS E KITS */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card className="border-primary/20 bg-primary/5">
                     <CardHeader className="pb-2">

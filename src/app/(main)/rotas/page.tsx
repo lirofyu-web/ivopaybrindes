@@ -15,7 +15,7 @@ import { MapPin, PlusCircle, Loader2, Edit, Trash2 } from "lucide-react";
 import type { Route } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
 
@@ -47,6 +47,7 @@ function RouteCard({ route, onEdit, onDelete }: { route: Route; onEdit: (route: 
 
 export default function RotasPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
     const { triggerSuccess } = useSuccessAnimation();
     const { data: routes, isLoading } = useCollection<Route>('rotas');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -82,10 +83,10 @@ export default function RotasPage() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!routeToDelete || !firestore) return;
+        if (!routeToDelete || !firestore || !user) return;
         
         try {
-            await deleteDoc(doc(firestore, 'rotas', routeToDelete.id!));
+            await deleteDoc(doc(firestore, 'users', user.uid, 'rotas', routeToDelete.id!));
             triggerSuccess();
             toast({
                 title: 'Rota Excluída!',
@@ -105,12 +106,12 @@ export default function RotasPage() {
     };
     
     const onSubmit = async (values: z.infer<typeof routeFormSchema>) => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         setIsSubmitting(true);
         
         try {
             if (editingRoute) {
-                const routeDocRef = doc(firestore, 'rotas', editingRoute.id!);
+                const routeDocRef = doc(firestore, 'users', user.uid, 'rotas', editingRoute.id!);
                 await updateDoc(routeDocRef, values);
                 triggerSuccess();
                 toast({
@@ -118,7 +119,7 @@ export default function RotasPage() {
                     description: `A rota "${values.name}" foi atualizada.`,
                 });
             } else {
-                await addDoc(collection(firestore, 'rotas'), values);
+                await addDoc(collection(firestore, 'users', user.uid, 'rotas'), values);
                 triggerSuccess();
                 toast({
                     title: 'Rota Adicionada!',

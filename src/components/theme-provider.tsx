@@ -16,7 +16,7 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(
 export function ThemeProvider({
   children,
   defaultTheme = 'dark',
-  storageKey = 'mrd-brindes-theme',
+  storageKey = 'ivopay-brindes-theme',
 }: {
   children: React.ReactNode
   defaultTheme?: Theme

@@ -37,20 +37,13 @@ const navItems = [
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, setOpen } = useSidebar();
 
   const handleNavClick = () => {
     if (isMobile) {
       setOpenMobile(false);
-    }
-    
-    const doc = window.document.documentElement as any;
-    const requestFullScreen = doc.requestFullscreen || doc.webkitRequestFullScreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
-
-    if (!window.document.fullscreenElement) {
-        requestFullScreen?.call(doc).catch((err: any) => {
-            console.warn(`Erro ao entrar em tela cheia: ${err.message}`);
-        });
+    } else {
+      setOpen(false);
     }
   };
 
@@ -67,16 +60,16 @@ export default function AppSidebar() {
           <SidebarMenu className="p-2 gap-1.5 bg-slate-950 rounded-lg shadow-inner">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.label}>
-                <Link href={item.href} passHref legacyBehavior>
-                  <SidebarMenuButton
-                    onClick={handleNavClick}
-                    isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-                    className="h-11 px-3 text-white hover:bg-white/10 data-[active=true]:bg-white/20 data-[active=true]:text-white"
-                  >
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  className="h-11 px-3 text-white hover:bg-white/10 data-[active=true]:bg-white/20 data-[active=true]:text-white"
+                >
+                  <Link href={item.href} onClick={handleNavClick}>
                     <item.icon className={item.className} />
                     <span className="font-medium">{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>

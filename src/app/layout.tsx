@@ -5,13 +5,13 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'MRD Brindes',
+  title: 'IVOPAY BRINDES',
   description: 'Gerenciamento e cobranças de raspinhas da sorte',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'MRD Brindes',
+    title: 'IVOPAY BRINDES',
   },
   formatDetection: {
     telephone: false,
@@ -52,7 +52,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider
           defaultTheme="dark"
-          storageKey="mrd-brindes-theme"
+          storageKey="ivopay-brindes-theme"
         >
           <FirebaseClientProvider>
             {children}

@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { differenceInDays } from 'date-fns';
 import ReactDOMServer from 'react-dom/server';
 import { Receipt } from '@/components/receipt';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, deleteDoc, doc, updateDoc, increment, setDoc, addDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -114,7 +114,7 @@ function ClientCard({ client, onChargeClick, onDebtClick, onDeleteClick, visitSt
                 <Wallet className="mr-1 h-3.5 w-3.5 text-primary" />
                 Dívida
             </Button>
-            <Link href={`/clientes/editar/${client.id}`} className="flex-shrink-0">
+            <Link href={`/clientes/editar?id=${client.id}`} className="flex-shrink-0">
               <Button size="icon" variant="outline" className="h-10 w-10 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
                   <Edit className="h-4 w-4" />
               </Button>
@@ -130,6 +130,7 @@ function ClientCard({ client, onChargeClick, onDebtClick, onDeleteClick, visitSt
 
 export default function ClientesPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { triggerSuccess } = useSuccessAnimation();
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>('clients');
   const { data: allCobrancas, isLoading: isLoadingCobrancas } = useCollection<Cobranca>('cobrancas');
@@ -245,9 +246,9 @@ export default function ClientesPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!clientToDelete || !firestore) return;
+    if (!clientToDelete || !firestore || !user) return;
     try {
-      await deleteDoc(doc(firestore, 'clients', clientToDelete.id!));
+      await deleteDoc(doc(firestore, 'users', user.uid, 'clients', clientToDelete.id!));
       triggerSuccess();
       toast({ title: 'Cliente Excluído!', description: `Sucesso para ${clientToDelete.name}` });
     } catch (error) {
@@ -317,7 +318,7 @@ export default function ClientesPage() {
   };
 
   const onChargeSubmit = async (values: z.infer<typeof chargeFormSchema>) => {
-    if (!selectedClient || !firestore) return;
+    if (!selectedClient || !firestore || !user) return;
     setIsSubmittingCharge(true);
     
     const chargeData: any = {
@@ -342,13 +343,13 @@ export default function ClientesPage() {
     Object.keys(chargeData).forEach(key => (chargeData[key] === null || chargeData[key] === undefined) && delete chargeData[key]);
     
     try {
-      const newRef = doc(collection(firestore, 'cobrancas'));
+      const newRef = doc(collection(firestore, 'users', user.uid, 'cobrancas'));
       
       // No modo offline com persistência, o setDoc resolve localmente de imediato
       await setDoc(newRef, chargeData);
       
       for (const p of prizesForCharge) {
-        await updateDoc(doc(firestore, 'premios', p.prizeId), { quantity: increment(-p.quantity) });
+        await updateDoc(doc(firestore, 'users', user.uid, 'premios', p.prizeId), { quantity: increment(-p.quantity) });
       }
       
       triggerSuccess();
@@ -364,17 +365,17 @@ export default function ClientesPage() {
   };
 
   const onDebtSubmit = async (values: z.infer<typeof debtFormSchema>) => {
-    if (!selectedClient || !firestore) return;
+    if (!selectedClient || !firestore || !user) return;
     setIsSubmittingDebt(true);
     
     try {
         const adjustment = values.type === 'add' ? values.amount : -values.amount;
-        await updateDoc(doc(firestore, 'clients', selectedClient.id!), {
+        await updateDoc(doc(firestore, 'users', user.uid, 'clients', selectedClient.id!), {
             currentDebt: increment(adjustment)
         });
 
         // Registrar transação de dívida para histórico
-        await addDoc(collection(firestore, 'debt_transactions'), {
+        await addDoc(collection(firestore, 'users', user.uid, 'debt_transactions'), {
           clientId: selectedClient.id,
           clientName: selectedClient.name,
           amount: values.amount,
@@ -460,7 +461,7 @@ export default function ClientesPage() {
             {Object.entries(clientsByRoute).sort(([a], [b]) => a.localeCompare(b)).map(([routeName, { clients: routeClients }]) => (
                 <div key={routeName} className="space-y-3">
                     <h2 className="text-sm font-semibold border-b pb-1">{routeName}</h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                         {routeClients.map(client => (
                             <ClientCard 
                                 key={client.id} 

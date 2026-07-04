@@ -18,7 +18,7 @@ type Message = {
 
 export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Olá! Sou o assistente da MRD Brindes. Como posso ajudar com seus clientes ou cobranças hoje?' }
+    { role: 'assistant', content: 'Olá! Sou o assistente da IVOPAY BRINDES. Como posso ajudar com seus clientes ou cobranças hoje?' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);

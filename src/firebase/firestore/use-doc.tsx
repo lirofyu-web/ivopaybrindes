@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, type DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
-import type { WithTimestamps } from '@/lib/types';
+import { useUser } from '../auth/use-user';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
-function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'updatedAt'> | null {
+function processDoc<T>(doc: DocumentData): T | null {
     if (!doc.exists()) {
         return null;
     }
@@ -24,17 +24,22 @@ function processDoc<T>(doc: DocumentData): WithTimestamps<T, 'createdAt' | 'upda
 
 export function useDoc<T>(path: string) {
     const firestore = useFirestore();
-    const [data, setData] = useState<WithTimestamps<T, 'createdAt' | 'updatedAt'> | null>(null);
+    const { user } = useUser();
+    const [data, setData] = useState<T | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        if (!firestore || !path) {
-            setIsLoading(false);
+        if (!firestore || !path || !user) {
+            if (!user || !path) {
+                setData(null);
+                setIsLoading(false);
+            }
             return;
         }
 
-        const docRef = doc(firestore, path);
+        const scopedPath = path.startsWith('users/') ? path : `users/${user.uid}/${path}`;
+        const docRef = doc(firestore, scopedPath);
         const unsubscribe = onSnapshot(docRef,
             (docSnapshot) => {
                 setData(processDoc<T>(docSnapshot));
@@ -52,7 +57,7 @@ export function useDoc<T>(path: string) {
         );
 
         return () => unsubscribe();
-    }, [path, firestore]);
+    }, [path, firestore, user]);
 
     return { data, isLoading, error };
 }

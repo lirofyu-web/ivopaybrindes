@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSuccessAnimation } from '@/components/success-animation-provider';
@@ -63,6 +63,7 @@ function PrizeCard({ prize, onEdit, onDelete }: { prize: Prize; onEdit: (prize: 
 // --- Main Page Component ---
 export default function PremiosPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
     const { triggerSuccess } = useSuccessAnimation();
     const { data: prizes, isLoading } = useCollection<Prize>('premios');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -159,9 +160,9 @@ export default function PremiosPage() {
     };
 
     const handleDelete = async (prizeId: string) => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         try {
-            await deleteDoc(doc(firestore, 'premios', prizeId));
+            await deleteDoc(doc(firestore, 'users', user.uid, 'premios', prizeId));
             triggerSuccess();
             toast({
                 title: 'Prêmio Deletado!',
@@ -179,12 +180,12 @@ export default function PremiosPage() {
     };
     
     const onSubmit = async (values: z.infer<typeof prizeFormSchema>) => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         setIsSubmitting(true);
         
         try {
             if (editingPrize) {
-                const prizeDocRef = doc(firestore, 'premios', editingPrize.id!);
+                const prizeDocRef = doc(firestore, 'users', user.uid, 'premios', editingPrize.id!);
                 await updateDoc(prizeDocRef, values);
                 triggerSuccess();
                 toast({
@@ -192,7 +193,7 @@ export default function PremiosPage() {
                     description: `O prêmio "${values.name}" foi atualizado com sucesso.`,
                 });
             } else {
-                await addDoc(collection(firestore, 'premios'), values);
+                await addDoc(collection(firestore, 'users', user.uid, 'premios'), values);
                 triggerSuccess();
                 toast({
                     title: 'Prêmio Adicionado!',
