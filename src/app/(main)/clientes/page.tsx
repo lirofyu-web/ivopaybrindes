@@ -1,7 +1,7 @@
 
 'use client'
 import Link from 'next/link';
-import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon, Wallet } from 'lucide-react';
+import { PlusCircle, Users, Search, MapPin, Percent, Edit, Trash2, DollarSign, Loader2, X, Camera, Printer as PrinterIcon, Wallet, MessageCircle } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Client, Prize, Cobranca, Route } from '@/lib/types';
@@ -147,6 +147,11 @@ export default function ClientesPage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  
+  // States para o recibo pós-cobrança
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const [lastCompletedCharge, setLastCompletedCharge] = useState<Cobranca | null>(null);
+  const [lastChargedClient, setLastChargedClient] = useState<Client | null>(null);
   
   const [prizesForCharge, setPrizesForCharge] = useState<{prizeId: string, prizeName: string, quantity: number}[]>([]);
   const [selectedPrizeForAdd, setSelectedPrizeForAdd] = useState<Prize | null>(null);
@@ -354,7 +359,12 @@ export default function ClientesPage() {
       
       triggerSuccess();
       toast({ title: 'Cobrança Salva!', description: `Sucesso para ${selectedClient.name}` });
-      handlePrintReceipt({ ...chargeData, id: newRef.id });
+      
+      const fullCharge = { ...chargeData, id: newRef.id };
+      setLastCompletedCharge(fullCharge);
+      setLastChargedClient(selectedClient);
+      setIsReceiptDialogOpen(true);
+      
       handleChargeDialogClose(false);
     } catch (error: any) {
       console.error(error);
@@ -402,6 +412,41 @@ export default function ClientesPage() {
     printWindow.document.write(`<html><head><title>Recibo</title>${document.head.innerHTML}<style>@media print {@page { size: 80mm auto; margin: 0; } body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } } body { width: 80mm; margin: 0; padding: 0; background: white; }</style></head><body>${receiptHtml}</body></html>`);
     printWindow.document.close();
     setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!lastCompletedCharge || !lastChargedClient) return;
+    
+    // Formatar número (remover caracteres não numéricos)
+    let phone = lastChargedClient.phone.replace(/\D/g, '');
+    if (phone.length === 10 || phone.length === 11) {
+       // Assumir Brasil (+55) se tiver 10/11 dígitos
+       phone = '55' + phone;
+    }
+
+    let msg = `*RECIBO DE COBRANÇA*\n\n`;
+    msg += `*Cliente:* ${lastCompletedCharge.clientName}\n`;
+    msg += `*Data:* ${lastCompletedCharge.createdAt.toLocaleDateString('pt-BR')} ${lastCompletedCharge.createdAt.toLocaleTimeString('pt-BR')}\n\n`;
+    msg += `*Qtd. Raspinhas:* ${lastCompletedCharge.scratchedAmount}\n`;
+    msg += `*Valor Bruto:* ${formatCurrency(lastCompletedCharge.grossRevenue)}\n`;
+    msg += `*Comissão (${lastCompletedCharge.commissionPercentage}%):* -${formatCurrency(lastCompletedCharge.commissionValue)}\n`;
+    if ((lastCompletedCharge.discount || 0) > 0) {
+        msg += `*Desconto:* -${formatCurrency(lastCompletedCharge.discount || 0)}\n`;
+    }
+    msg += `*LÍQUIDO A PAGAR:* ${formatCurrency(lastCompletedCharge.netRevenue)}\n\n`;
+    
+    if (lastCompletedCharge.prizesGiven && lastCompletedCharge.prizesGiven.length > 0) {
+        msg += `*Prêmios Entregues:*\n`;
+        lastCompletedCharge.prizesGiven.forEach(p => {
+            msg += `- ${p.quantity}x ${p.prizeName}\n`;
+        });
+        msg += `\n`;
+    }
+
+    msg += `Obrigado pela parceria! 🤝`;
+
+    const textEncoded = encodeURIComponent(msg);
+    window.open(`https://wa.me/${phone}?text=${textEncoded}`, '_blank');
   };
 
   const filteredClients = useMemo(() => {
@@ -634,6 +679,44 @@ export default function ClientesPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        {/* DIÁLOGO DE SUCESSO E RECIBO */}
+        <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
+            <DialogContent className="w-[90vw] sm:max-w-sm rounded-lg text-center">
+                <DialogHeader>
+                    <DialogTitle className="text-xl text-center text-primary">Cobrança Finalizada!</DialogTitle>
+                    <DialogDescription className="text-center text-sm">
+                        O que você deseja fazer com o recibo de {lastCompletedCharge?.clientName}?
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="flex flex-col gap-3 mt-4">
+                    <Button 
+                        onClick={() => lastCompletedCharge && handlePrintReceipt(lastCompletedCharge)}
+                        className="h-12 w-full text-base bg-blue-600 hover:bg-blue-700"
+                    >
+                        <PrinterIcon className="mr-2 h-5 w-5" />
+                        Imprimir Recibo
+                    </Button>
+                    
+                    <Button 
+                        onClick={handleShareWhatsApp}
+                        className="h-12 w-full text-base bg-[#25D366] hover:bg-[#20bd5a] text-white"
+                    >
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Enviar no WhatsApp
+                    </Button>
+
+                    <Button 
+                        variant="outline"
+                        onClick={() => setIsReceiptDialogOpen(false)}
+                        className="h-12 w-full mt-2"
+                    >
+                        Fechar
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
